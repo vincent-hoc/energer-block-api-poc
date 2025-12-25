@@ -1,8 +1,10 @@
-import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { AnalyzeService } from './analyze.service';
 import { AnalyzeDto } from './analyze.dto';
+import { BasicAuthGuard } from '../common/guards/basic-auth.guard';
 
 @Controller('api/analyze')
+@UseGuards(BasicAuthGuard)
 export class AnalyzeController {
   constructor(private readonly analyzeService: AnalyzeService) {}
 

@@ -1,8 +1,10 @@
-import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { SummarizeService } from './summarize.service';
 import { SummarizeDto } from './summarize.dto';
+import { BasicAuthGuard } from '../common/guards/basic-auth.guard';
 
 @Controller('api/summarize')
+@UseGuards(BasicAuthGuard)
 export class SummarizeController {
   constructor(private readonly summarizeService: SummarizeService) {}
 
