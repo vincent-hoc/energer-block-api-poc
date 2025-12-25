@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SummarizeDto } from './summarize.dto';
+import { AnalyzeDto } from './analyze.dto';
 import { ocrSpace } from 'ocr-space-api-wrapper';
 
 @Injectable()
-export class SummarizeService {
+export class AnalyzeService {
   private ocrApiKey: string;
   private ocrUrl: string;
   private chatbaseApiUrl: string;
@@ -39,106 +39,113 @@ export class SummarizeService {
     this.chatbaseOcodeChatbotId = chatbaseOcodeChatbotId;
   }
 
-  async processSummarize(dto: SummarizeDto): Promise<any> {
-    console.log('Processing summarize request:', {
+  async processAnalyze(dto: AnalyzeDto): Promise<any> {
+    console.log('Processing analyze request:', {
       vault_uuid: dto.vault_uuid,
-      document_uuid: dto.document_uuid,
-      document_url: dto.document_url,
+      documents_count: dto.documents.length,
       async: dto.async ?? true,
-      debug_ocr: dto.debug_ocr ?? false,
-      fost_key: dto.fost_key,
     });
 
+    const isAsync = dto.async ?? true;
+
+    // If async mode, return immediately
+    if (isAsync) {
+      console.log('[Async Mode] Returning immediately with process start message');
+      return {
+        vault_uuid: dto.vault_uuid,
+        msg: 'Process start'
+      };
+    }
+
     try {
-      // Step 1: Extract text with OCR.space
-      console.log('[Step 1] Starting OCR.space text extraction...');
-      const extractedText = await this.extractTextWithOCR(dto.document_url, dto.debug_ocr ?? false);
-      console.log(`[Step 1 - OCR.space] Completed - Extracted ${extractedText.length} characters`);
+      const processedDocuments: any[] = [];
 
-      // Step 2: Send to Chatbase for analysis
-      console.log('[Step 2] Sending OCR text to Chatbase (Step 1)...');
-      const chatbaseResponse = await this.callChatbase(extractedText, 'Summarize Analysis', this.chatbaseSummarizeChatbotId);
-      console.log('[Step 2 - Chatbase] Completed');
+      // Process each document
+      for (let i = 0; i < dto.documents.length; i++) {
+        const doc = dto.documents[i];
+        console.log(`\n=== Processing document ${i + 1}/${dto.documents.length} ===`);
+        console.log(`Document UUID: ${doc.document_uuid}`);
 
-      // Parse response if it has a "text" field
-      let analysisResult = chatbaseResponse;
-      if (chatbaseResponse && chatbaseResponse.text) {
-        try {
-          analysisResult = JSON.parse(chatbaseResponse.text);
-          console.log('[Step 2] Analysis result:', analysisResult);
-        } catch (error) {
-          console.warn('[Warning] Could not parse Chatbase text field as JSON, using raw response');
-          analysisResult = chatbaseResponse;
-        }
-      }
+        // Step 1: Extract text with OCR.space
+        console.log('[Step 1] Starting OCR.space text extraction...');
+        const extractedText = await this.extractTextWithOCR(doc.document_url);
+        console.log(`[Step 1 - OCR.space] Completed - Extracted ${extractedText.length} characters`);
 
-      // Inject document_uuid into analysisResult
-      if (dto.document_uuid) {
-        analysisResult.document_uuid = dto.document_uuid;
-        console.log('[Step 2] Injected document_uuid:', dto.document_uuid);
-      }
+        // Step 2: Send to Chatbase for analysis
+        console.log('[Step 2] Sending OCR text to Chatbase (Summarize)...');
+        const chatbaseResponse = await this.callChatbase(extractedText, 'Summarize Analysis', this.chatbaseSummarizeChatbotId);
+        console.log('[Step 2 - Chatbase] Completed');
 
-      // Step 3: Send analysis result to second Chatbase
-      console.log('[Step 3] Sending analysis result to Chatbase (Step 2)...');
-      const step2Response = await this.callChatbase(JSON.stringify(analysisResult), 'Summarize Step 2', this.chatbaseFostIdentificationId);
-      console.log('[Step 3 - Chatbase] Completed');
-
-      // Parse step 3 fost identification chatbase
-      let finalResult = step2Response;
-      if (step2Response && step2Response.text) {
-        try {
-          finalResult = JSON.parse(step2Response.text);
-          console.log('[Step 3] Final result:', finalResult);
-        } catch (error) {
-          console.warn('[Warning] Could not parse Step 2 Chatbase text field as JSON, using raw response');
-          finalResult = step2Response;
-        }
-      }
-
-      // Determine fosts value: use fost_key if provided, otherwise use Step 3 result
-      const fostsValue = dto.fost_key ? [dto.fost_key] : finalResult;
-
-      // Step 4: Only call OCODE analysis if async is false
-      let analyseResult = [];
-      const isAsync = dto.async ?? true; // Default to true if not specified
-
-      if (!isAsync) {
-        console.log('[Step 4] Sending fosts and documents to OCODE chatbot...');
-        const ocodeInput = {
-          fosts: fostsValue,
-          documents: [analysisResult]
-        };
-        const ocodeResponse = await this.callChatbase(JSON.stringify(ocodeInput), 'OCODE Analysis', this.chatbaseOcodeChatbotId);
-        console.log('[Step 4 - OCODE] Completed');
-
-        // Parse OCODE response
-        if (ocodeResponse && ocodeResponse.text) {
+        // Parse response if it has a "text" field
+        let analysisResult = chatbaseResponse;
+        if (chatbaseResponse && chatbaseResponse.text) {
           try {
-            analyseResult = JSON.parse(ocodeResponse.text);
-            console.log('[Step 4] OCODE analysis result:', analyseResult);
+            analysisResult = JSON.parse(chatbaseResponse.text);
+            console.log('[Step 2] Analysis result parsed');
           } catch (error) {
-            console.warn('[Warning] Could not parse OCODE text field as JSON, using raw response');
-            analyseResult = ocodeResponse;
+            console.warn('[Warning] Could not parse Chatbase text field as JSON, using raw response');
+            analysisResult = chatbaseResponse;
           }
-        } else {
+        }
+
+        // Inject document_uuid into analysisResult
+        analysisResult.document_uuid = doc.document_uuid;
+        console.log('[Step 2] Injected document_uuid:', doc.document_uuid);
+
+        processedDocuments.push(analysisResult);
+      }
+
+      // Step 3: Send all processed documents to FOST Identification
+      console.log('\n[Step 3] Sending all documents to FOST Identification...');
+      const fostInput = { documents: processedDocuments };
+      const fostResponse = await this.callChatbase(JSON.stringify(fostInput), 'FOST Identification', this.chatbaseFostIdentificationId);
+      console.log('[Step 3 - FOST] Completed');
+
+      // Parse FOST response
+      let fostsResult = fostResponse;
+      if (fostResponse && fostResponse.text) {
+        try {
+          fostsResult = JSON.parse(fostResponse.text);
+          console.log('[Step 3] FOST result parsed');
+        } catch (error) {
+          console.warn('[Warning] Could not parse FOST text field as JSON, using raw response');
+          fostsResult = fostResponse;
+        }
+      }
+
+      // Step 4: Call OCODE analysis (async is always false here due to early return)
+      console.log('\n[Step 4] Sending documents and fosts to OCODE chatbot...');
+      const ocodeInput = {
+        fosts: fostsResult,
+        documents: processedDocuments
+      };
+      const ocodeResponse = await this.callChatbase(JSON.stringify(ocodeInput), 'OCODE Analysis', this.chatbaseOcodeChatbotId);
+      console.log('[Step 4 - OCODE] Completed');
+
+      // Parse OCODE response
+      let analyseResult = ocodeResponse;
+      if (ocodeResponse && ocodeResponse.text) {
+        try {
+          analyseResult = JSON.parse(ocodeResponse.text);
+          console.log('[Step 4] OCODE analysis result parsed');
+        } catch (error) {
+          console.warn('[Warning] Could not parse OCODE text field as JSON, using raw response');
           analyseResult = ocodeResponse;
         }
-      } else {
-        console.log('[Step 4] Skipped - async mode enabled');
       }
 
       return {
-        documents: [analysisResult],
-        fosts: fostsValue,
+        documents: processedDocuments,
+        fosts: fostsResult,
         analyse: analyseResult
       };
     } catch (error) {
-      console.error('[Error] Failed to process summarize:', error);
+      console.error('[Error] Failed to process analyze:', error);
       throw error;
     }
   }
 
-  private async extractTextWithOCR(documentUrl: string, debugOcr: boolean): Promise<string> {
+  private async extractTextWithOCR(documentUrl: string): Promise<string> {
     try {
       console.log('  Sending file URL to OCR.space...');
 
@@ -152,10 +159,6 @@ export class SummarizeService {
         filetype: 'PDF',
         ocrUrl: this.ocrUrl,
       });
-
-      if (debugOcr) {
-        console.log('[DEBUG OCR] Full OCR response:', JSON.stringify(ocrResult, null, 2));
-      }
 
       // Extract text from OCR result
       if (ocrResult && ocrResult.ParsedResults) {

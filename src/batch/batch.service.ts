@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, ListObjectsV2Command, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, ListObjectsV2Command, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import {
@@ -30,8 +30,9 @@ export class BatchService {
   private chatbaseDossierAnalysisId: string;
   private chatbaseDossierInterpretationId: string;
 
-  private readonly MAX_RETRIES = 10;
+  private readonly MAX_RETRIES = 20;
   private readonly INITIAL_RETRY_DELAY = 5000; // 5 seconds
+  private readonly TEXTRACT_POLLING_INTERVAL = 10000; // 10 seconds between status checks
 
   constructor(private configService: ConfigService) {
     const region = this.configService.get<string>('AWS_REGION');
@@ -85,6 +86,8 @@ export class BatchService {
 
     this.openai = new OpenAI({
       apiKey: openaiApiKey,
+      timeout: 120000, // 2 minutes timeout for large documents
+      maxRetries: 0, // Disable OpenAI's internal retries (we handle retries ourselves)
     });
 
     this.bucketName = bucketName;
@@ -737,7 +740,7 @@ NE JAMAIS :
       // Start Textract jobs sequentially with delay to avoid rate limiting
       console.log(`      Starting Textract jobs sequentially to avoid rate limits...`);
       const jobs: Array<{ jobId: string; pdfInfo: any }> = [];
-      const DELAY_BETWEEN_JOBS = 2000; // 2 seconds delay between each job start
+      const DELAY_BETWEEN_JOBS = 5000; // 5 seconds delay between each job start
 
       for (let i = 0; i < uploadedFiles.length; i++) {
         const { s3Key, pdfInfo } = uploadedFiles[i];
@@ -799,6 +802,23 @@ NE JAMAIS :
       const results = await Promise.all(resultPromises);
       txtPaths.push(...results);
 
+      // Cleanup: Delete temporary S3 files
+      console.log(`      Cleaning up ${uploadedFiles.length} temporary S3 file(s)...`);
+      const deletePromises = uploadedFiles.map(async ({ s3Key }) => {
+        try {
+          const deleteCommand = new DeleteObjectCommand({
+            Bucket: this.bucketName,
+            Key: s3Key,
+          });
+          await this.s3Client.send(deleteCommand);
+          console.log(`      Deleted S3 file: ${s3Key}`);
+        } catch (error) {
+          console.warn(`      Warning: Failed to delete S3 file ${s3Key}:`, error);
+        }
+      });
+
+      await Promise.all(deletePromises);
+
       return txtPaths;
     } catch (error) {
       console.error(`      [Textract Error] Failed to analyze PDFs:`, error);
@@ -826,7 +846,7 @@ NE JAMAIS :
     let nextToken: string | undefined;
 
     while (status === 'IN_PROGRESS') {
-      await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5 seconds
+      await new Promise((resolve) => setTimeout(resolve, this.TEXTRACT_POLLING_INTERVAL));
 
       const getCommand = new GetDocumentAnalysisCommand({
         JobId: jobId,
@@ -1223,15 +1243,17 @@ NE JAMAIS :
 
   private formatDuration(seconds: string): string {
     const totalSeconds = parseFloat(seconds);
-    const minutes = Math.floor(totalSeconds / 60);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
     const remainingSeconds = (totalSeconds % 60).toFixed(2);
-    return `${minutes}:${remainingSeconds.padStart(5, '0')}`;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.padStart(5, '0')}`;
   }
 
   private formatDurationFromNumber(seconds: number): string {
-    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
     const remainingSeconds = (seconds % 60).toFixed(2);
-    return `${minutes}:${remainingSeconds.padStart(5, '0')}`;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.padStart(5, '0')}`;
   }
 
   private generateBatchReport(
