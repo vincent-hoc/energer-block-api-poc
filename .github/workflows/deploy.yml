@@ -1,4 +1,4 @@
-name: Deploy énerver-api-poc to EC2
+name: Deploy energer-api-poc to EC2
 
 on:
   push:
