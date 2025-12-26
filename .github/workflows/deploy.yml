@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:  # Permet le déclenchement manuel
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -21,8 +21,11 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            source ~/.bashrc
-            cd /var/www/enerver-api-poc
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            export PATH="$(yarn global bin):$PATH"
+            
+            cd /var/www/energer-block-api-poc
             
             echo "📥 Pulling latest code..."
             git pull origin main
@@ -34,6 +37,6 @@ jobs:
             npm run build
             
             echo "🔄 Restarting PM2..."
-            pm2 restart enerver-api-poc
+            pm2 restart energer-api-poc
             
             echo "✅ Deployment complete!"
