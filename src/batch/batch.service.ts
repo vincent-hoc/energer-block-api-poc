@@ -387,23 +387,8 @@ export class BatchService {
         );
         console.log(`      [Analysis Result] ${dossierAnalysisResult}`);
 
-        // Step 8: Send to Dossier Interpretation and generate report
-        console.log(`    [Step 8] Generating interpretation report...`);
-        const interpretationStartTime = Date.now();
-
-        const reportPath = await this.processDossierInterpretation(
-          dossierAnalysisResult,
-          fileFolder,
-        );
-
-        const interpretationDuration = ((Date.now() - interpretationStartTime) / 1000).toFixed(2);
-        console.log(
-          `    [Step 8 - Dossier Interpretation] Completed in ${interpretationDuration}s`,
-        );
-        console.log(`      [Report] ${reportPath}`);
-
-        // Step 9: Send dossier_analysis to Interprétation du dossier and generate text report
-        console.log(`    [Step 9] Generating final interpretation text...`);
+        // Step 8: Generate final interpretation text report
+        console.log(`    [Step 8] Generating final interpretation text...`);
         const finalInterpretationStartTime = Date.now();
 
         const finalReportPath = await this.generateFinalInterpretation(
@@ -413,7 +398,7 @@ export class BatchService {
 
         const finalInterpretationDuration = ((Date.now() - finalInterpretationStartTime) / 1000).toFixed(2);
         console.log(
-          `    [Step 9 - Final Interpretation] Completed in ${finalInterpretationDuration}s`,
+          `    [Step 8 - Final Interpretation] Completed in ${finalInterpretationDuration}s`,
         );
         console.log(`      [Final Report] ${finalReportPath}`);
 
@@ -426,7 +411,6 @@ export class BatchService {
           chatbaseDuration,
           fostDuration,
           analysisDuration,
-          interpretationDuration,
           finalInterpretationDuration,
           totalDuration: ((Date.now() - fileStartTime) / 1000).toFixed(2),
           fileKey,
@@ -440,12 +424,12 @@ export class BatchService {
 
         // Cleanup temporary files if debug mode is disabled
         if (!debug) {
-          console.log(`    [Cleanup] Removing temporary files (keeping only 9_interpretation_finale.txt)...`);
+          console.log(`    [Cleanup] Removing temporary files (keeping only 8_interpretation_finale.txt)...`);
           const files = await fs.readdir(fileFolder);
           let deletedCount = 0;
 
           for (const file of files) {
-            if (file !== '9_interpretation_finale.txt') {
+            if (file !== '8_interpretation_finale.txt') {
               const filePath = path.join(fileFolder, file);
               await fs.unlink(filePath);
               deletedCount++;
@@ -658,11 +642,19 @@ NE JAMAIS :
       // Load the PDF with pdf-lib
       console.log(`      Loading PDF document...`);
       const pdfDoc = await PDFDocument.load(pdfBuffer);
+      const totalPages = pdfDoc.getPageCount();
+      console.log(`      PDF has ${totalPages} pages`);
 
       // Generate a PDF for each document
       for (let i = 0; i < documents.length; i++) {
         const doc = documents[i];
         const { type_fichier, page_debut, page_fin } = doc;
+
+        // Validate page numbers
+        if (page_debut === undefined || page_fin === undefined || page_debut < 1 || page_fin < 1) {
+          console.warn(`      Skipping document ${i + 1}: invalid page range (page_debut: ${page_debut}, page_fin: ${page_fin})`);
+          continue;
+        }
 
         console.log(
           `      Generating PDF ${i + 1}/${documents.length}: ${type_fichier} (pages ${page_debut}-${page_fin})`,
@@ -673,8 +665,18 @@ NE JAMAIS :
 
         // Copy pages from original PDF (page numbers are 1-indexed in the analysis, 0-indexed in pdf-lib)
         for (let pageNum = page_debut; pageNum <= page_fin; pageNum++) {
+          if (pageNum > totalPages) {
+            console.warn(`      Skipping page ${pageNum}: exceeds total pages (${totalPages})`);
+            continue;
+          }
           const [copiedPage] = await newPdf.copyPages(pdfDoc, [pageNum - 1]);
           newPdf.addPage(copiedPage);
+        }
+
+        // Skip if no pages were added
+        if (newPdf.getPageCount() === 0) {
+          console.warn(`      Skipping document ${i + 1}: no valid pages to copy`);
+          continue;
         }
 
         // Generate filename with step number prefix
@@ -1085,50 +1087,6 @@ NE JAMAIS :
     }
   }
 
-  private async processDossierInterpretation(
-    analysisResultPath: string,
-    fileFolder: string,
-  ): Promise<string> {
-    try {
-      console.log(`      Reading Dossier Analysis result...`);
-
-      // Read Dossier Analysis result
-      const analysisContent = await fs.readFile(analysisResultPath, 'utf-8');
-      let analysisData = JSON.parse(analysisContent);
-
-      // Unwrap "content" field if it exists - extract content to root
-      if (analysisData && typeof analysisData === 'object' && 'content' in analysisData && Object.keys(analysisData).length === 1) {
-        analysisData = analysisData.content;
-      }
-
-      // Send to Dossier Interpretation chatbase
-      console.log(`      Sending to Dossier Interpretation...`);
-
-      const analysisDataString = JSON.stringify(analysisData, null, 2);
-
-      // Call chatbase for validation/processing (response not used in output file)
-      await this.callChatbase(
-        analysisDataString,
-        this.chatbaseDossierInterpretationId,
-        'Dossier Interpretation',
-      );
-
-      // Save the data that was sent to chatbase (not the response)
-      // The file 8_rapport_analyse.json should be identical to what was sent
-      const reportFilename = `8_rapport_analyse.json`;
-      const reportPath = path.join(fileFolder, reportFilename);
-
-      await fs.writeFile(reportPath, JSON.stringify(analysisData, null, 2), 'utf-8');
-
-      console.log(`      Saved analysis report: ${reportFilename}`);
-
-      return reportPath;
-    } catch (error) {
-      console.error(`      [Dossier Interpretation Error]:`, error);
-      throw error;
-    }
-  }
-
   private async generateFinalInterpretation(
     dossierAnalysisJsonPath: string,
     fileFolder: string,
@@ -1161,7 +1119,7 @@ NE JAMAIS :
       }
 
       // Save as TXT file with step 9 prefix
-      const txtFilename = `9_interpretation_finale.txt`;
+      const txtFilename = `8_interpretation_finale.txt`;
       const txtPath = path.join(fileFolder, txtFilename);
 
       await fs.writeFile(txtPath, textContent, 'utf-8');
@@ -1334,7 +1292,6 @@ Configuration:
     chatbaseDuration: string;
     fostDuration: string;
     analysisDuration: string;
-    interpretationDuration: string;
     finalInterpretationDuration: string;
     totalDuration: string;
     fileKey: string;
@@ -1362,8 +1319,7 @@ Documents trouvés: ${data.documentsCount}
   Étape 5 - Extraction des champs                   : ${this.formatDuration(data.chatbaseDuration)}
   Étape 6 - Identification de la FOST               : ${this.formatDuration(data.fostDuration)}
   Étape 7 - Analyse du dossier                      : ${this.formatDuration(data.analysisDuration)}
-  Étape 8 - Interprétation du dossier               : ${this.formatDuration(data.interpretationDuration)}
-  Étape 9 - Génération du rapport                   : ${this.formatDuration(data.finalInterpretationDuration)}
+  Étape 8 - Génération du rapport final             : ${this.formatDuration(data.finalInterpretationDuration)}
 
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ TEMPS TOTAL                                                                   │
