@@ -3,7 +3,21 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class BasicAuthGuard implements CanActivate {
-  constructor(private configService: ConfigService) {}
+  private readonly users: Map<string, string>;
+
+  constructor(private configService: ConfigService) {
+    this.users = new Map();
+
+    // Add demo user
+    this.users.set('demo', 'demo2026');
+
+    // Add configured user from environment
+    const envUsername = this.configService.get<string>('API_AUTH_USERNAME');
+    const envPassword = this.configService.get<string>('API_AUTH_PASSWORD');
+    if (envUsername && envPassword) {
+      this.users.set(envUsername, envPassword);
+    }
+  }
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
@@ -25,16 +39,9 @@ export class BasicAuthGuard implements CanActivate {
       const credentials = Buffer.from(encodedCredentials, 'base64').toString('utf-8');
       const [username, password] = credentials.split(':');
 
-      // Get expected credentials from environment
-      const expectedUsername = this.configService.get<string>('API_AUTH_USERNAME');
-      const expectedPassword = this.configService.get<string>('API_AUTH_PASSWORD');
-
-      if (!expectedUsername || !expectedPassword) {
-        throw new Error('API authentication not configured');
-      }
-
       // Verify credentials
-      if (username === expectedUsername && password === expectedPassword) {
+      const expectedPassword = this.users.get(username);
+      if (expectedPassword && password === expectedPassword) {
         return true;
       }
 
