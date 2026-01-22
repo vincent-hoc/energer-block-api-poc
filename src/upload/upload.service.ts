@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -26,16 +27,21 @@ export class UploadService {
     const extension = file.originalname.split('.').pop();
     const key = `uploads/${document_uuid}.${extension}`;
 
-    const command = new PutObjectCommand({
+    const putCommand = new PutObjectCommand({
       Bucket: this.bucketName,
       Key: key,
       Body: file.buffer,
       ContentType: file.mimetype,
     });
 
-    await this.s3Client.send(command);
+    await this.s3Client.send(putCommand);
 
-    const document_url = `https://${this.bucketName}.s3.eu-west-3.amazonaws.com/${key}`;
+    // Generate pre-signed URL (valid for 1 hour)
+    const getCommand = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: key,
+    });
+    const document_url = await getSignedUrl(this.s3Client, getCommand, { expiresIn: 3600 });
 
     return {
       document_uuid,

@@ -11,6 +11,7 @@ import { UploadModule } from './upload/upload.module';
 import { OcrModule } from './ocr/ocr.module';
 import { ExtractModule } from './extract/extract.module';
 import { DossierModule } from './dossier/dossier.module';
+import { TestModule } from './test/test.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { DossierModule } from './dossier/dossier.module';
     OcrModule,
     ExtractModule,
     DossierModule,
+    TestModule,
   ],
   controllers: [AppController],
   providers: [AppService],
