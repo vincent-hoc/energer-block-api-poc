@@ -1,37 +1,50 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SummarizeDto } from './summarize.dto';
-import { ocrSpace } from 'ocr-space-api-wrapper';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import {
+  TextractClient,
+  StartDocumentAnalysisCommand,
+  GetDocumentAnalysisCommand,
+} from '@aws-sdk/client-textract';
 
 @Injectable()
 export class SummarizeService {
-  private ocrApiKey: string;
-  private ocrUrl: string;
+  private s3Client: S3Client;
+  private textractClient: TextractClient;
+  private bucketName: string;
   private chatbaseApiUrl: string;
   private chatbaseBearerToken: string;
   private chatbaseSummarizeChatbotId: string;
   private chatbaseFostIdentificationId: string;
   private chatbaseOcodeChatbotId: string;
 
+  private readonly TEXTRACT_POLLING_INTERVAL = 5000; // 5 seconds
+
   constructor(private configService: ConfigService) {
-    const ocrApiKey = this.configService.get<string>('OCR_SPACE_API_KEY');
-    const ocrUrl = this.configService.get<string>('OCR_SPACE_URL');
+    const region = this.configService.get<string>('AWS_REGION');
+    const accessKeyId = this.configService.get<string>('AWS_ACCESS_KEY_ID');
+    const secretAccessKey = this.configService.get<string>('AWS_SECRET_ACCESS_KEY');
+    const bucketName = this.configService.get<string>('S3_BUCKET_NAME');
     const chatbaseApiUrl = this.configService.get<string>('CHATBASE_API_URL');
     const chatbaseBearerToken = this.configService.get<string>('CHATBASE_BEARER_TOKEN');
     const chatbaseSummarizeChatbotId = this.configService.get<string>('CHATBASE_SUMMARIZE_CHATBOT_ID');
     const chatbaseFostIdentificationId = this.configService.get<string>('CHATBASE_FOST_IDENTIFICATION_CHATBOT_ID');
     const chatbaseOcodeChatbotId = this.configService.get<string>('CHATBASE_OCODE_CHATBOT_ID');
 
-    if (!ocrApiKey || !ocrUrl) {
-      throw new Error('Missing OCR.space configuration in environment variables');
+    if (!region || !accessKeyId || !secretAccessKey || !bucketName) {
+      throw new Error('Missing AWS configuration in environment variables');
     }
 
     if (!chatbaseApiUrl || !chatbaseBearerToken || !chatbaseSummarizeChatbotId || !chatbaseFostIdentificationId || !chatbaseOcodeChatbotId) {
       throw new Error('Missing Chatbase configuration in environment variables');
     }
 
-    this.ocrApiKey = ocrApiKey;
-    this.ocrUrl = ocrUrl;
+    const credentials = { accessKeyId, secretAccessKey };
+
+    this.s3Client = new S3Client({ region, credentials });
+    this.textractClient = new TextractClient({ region, credentials });
+    this.bucketName = bucketName;
     this.chatbaseApiUrl = chatbaseApiUrl;
     this.chatbaseBearerToken = chatbaseBearerToken;
     this.chatbaseSummarizeChatbotId = chatbaseSummarizeChatbotId;
@@ -40,154 +53,211 @@ export class SummarizeService {
   }
 
   async processSummarize(dto: SummarizeDto): Promise<any> {
-    console.log('Processing summarize request:', {
-      vault_uuid: dto.vault_uuid,
-      document_uuid: dto.document_uuid,
-      document_url: dto.document_url,
-      async: dto.async ?? true,
-      debug_ocr: dto.debug_ocr ?? false,
-      fost_key: dto.fost_key,
-    });
+    const isAsync = dto.async ?? true;
 
     try {
-      // Step 1: Extract text with OCR.space
-      console.log('[Step 1] Starting OCR.space text extraction...');
-      const extractedText = await this.extractTextWithOCR(dto.document_url, dto.debug_ocr ?? false);
-      console.log(`[Step 1 - OCR.space] Completed - Extracted ${extractedText.length} characters`);
+      // Step 1: Extract text with AWS Textract
+      console.log('[Summarize] Starting Textract...');
+      const textractResult = await this.extractTextWithTextract(dto.document_url, dto.s3_key, dto.debug ?? false);
+      const extractedText = textractResult.text;
+      console.log('[Summarize] Textract completed');
 
       // Step 2: Send to Chatbase for analysis
-      console.log('[Step 2] Sending OCR text to Chatbase (Step 1)...');
-      const chatbaseResponse = await this.callChatbase(extractedText, 'Summarize Analysis', this.chatbaseSummarizeChatbotId);
-      console.log('[Step 2 - Chatbase] Completed');
+      console.log('[Summarize] Starting Chatbase summarization...');
+      const chatbaseResponse = await this.callChatbase(extractedText, 'Summarize', this.chatbaseSummarizeChatbotId);
 
-      // Parse response if it has a "text" field
       let analysisResult = chatbaseResponse;
       if (chatbaseResponse && chatbaseResponse.text) {
         try {
           analysisResult = JSON.parse(chatbaseResponse.text);
-          console.log('[Step 2] Analysis result:', analysisResult);
-        } catch (error) {
-          console.warn('[Warning] Could not parse Chatbase text field as JSON, using raw response');
+        } catch {
           analysisResult = chatbaseResponse;
         }
       }
 
-      // Inject document_uuid into analysisResult
       if (dto.document_uuid) {
         analysisResult.document_uuid = dto.document_uuid;
-        console.log('[Step 2] Injected document_uuid:', dto.document_uuid);
       }
+      console.log('[Summarize] Chatbase summarization completed');
 
-      // Step 3: Send analysis result to second Chatbase
-      console.log('[Step 3] Sending analysis result to Chatbase (Step 2)...');
-      const step2Response = await this.callChatbase(JSON.stringify(analysisResult), 'Summarize Step 2', this.chatbaseFostIdentificationId);
-      console.log('[Step 3 - Chatbase] Completed');
+      // Step 3: Send analysis result to FOST identification
+      console.log('[Summarize] Starting FOST identification...');
+      const fostResponse = await this.callChatbase(JSON.stringify(analysisResult), 'FOST', this.chatbaseFostIdentificationId);
 
-      // Parse step 3 fost identification chatbase
-      let finalResult = step2Response;
-      if (step2Response && step2Response.text) {
+      let finalResult = fostResponse;
+      if (fostResponse && fostResponse.text) {
         try {
-          finalResult = JSON.parse(step2Response.text);
-          console.log('[Step 3] Final result:', finalResult);
-        } catch (error) {
-          console.warn('[Warning] Could not parse Step 2 Chatbase text field as JSON, using raw response');
-          finalResult = step2Response;
+          finalResult = JSON.parse(fostResponse.text);
+        } catch {
+          finalResult = fostResponse;
         }
       }
+      console.log('[Summarize] FOST identification completed');
 
-      // Determine fosts value: use fost_key if provided, otherwise use Step 3 result
       const fostsValue = dto.fost_key ? [dto.fost_key] : finalResult;
 
       // Step 4: Only call OCODE analysis if async is false
       let analyseResult = [];
-      const isAsync = dto.async ?? true; // Default to true if not specified
 
       if (!isAsync) {
-        console.log('[Step 4] Sending fosts and documents to OCODE chatbot...');
+        console.log('[Summarize] Starting OCODE analysis...');
         const ocodeInput = {
           fosts: fostsValue,
           documents: [analysisResult]
         };
-        const ocodeResponse = await this.callChatbase(JSON.stringify(ocodeInput), 'OCODE Analysis', this.chatbaseOcodeChatbotId);
-        console.log('[Step 4 - OCODE] Completed');
+        const ocodeResponse = await this.callChatbase(JSON.stringify(ocodeInput), 'OCODE', this.chatbaseOcodeChatbotId);
 
-        // Parse OCODE response
         if (ocodeResponse && ocodeResponse.text) {
           try {
             analyseResult = JSON.parse(ocodeResponse.text);
-            console.log('[Step 4] OCODE analysis result:', analyseResult);
-          } catch (error) {
-            console.warn('[Warning] Could not parse OCODE text field as JSON, using raw response');
+          } catch {
             analyseResult = ocodeResponse;
           }
         } else {
           analyseResult = ocodeResponse;
         }
-      } else {
-        console.log('[Step 4] Skipped - async mode enabled');
+        console.log('[Summarize] OCODE analysis completed');
       }
 
-      return {
+      const response: any = {
         documents: [analysisResult],
         fosts: fostsValue,
         analyse: analyseResult
       };
+
+      if (dto.debug) {
+        response.debug_OCR = extractedText;
+        response.debug_OCR_JSON = textractResult.blocks;
+      }
+
+      return response;
     } catch (error) {
-      console.error('[Error] Failed to process summarize:', error);
+      console.error('[Summarize] Error:', error.message);
       throw error;
     }
   }
 
-  private async extractTextWithOCR(documentUrl: string, debugOcr: boolean): Promise<string> {
-    try {
-      console.log('  Sending file URL to OCR.space...');
+  private async extractTextWithTextract(documentUrl: string, existingS3Key: string | undefined, debug: boolean): Promise<{ text: string; blocks: any[] }> {
+    let tempS3Key: string | null = null;
 
-      const ocrResult = await ocrSpace(documentUrl, {
-        apiKey: this.ocrApiKey,
-        language: 'fre',
-        OCREngine: "1",
-        isTable: false,
-        isSearchablePdfHideTextLayer: true,
-        scale: true,
-        filetype: 'PDF',
-        ocrUrl: this.ocrUrl,
+    try {
+      let s3KeyToUse: string;
+
+      if (existingS3Key) {
+        s3KeyToUse = existingS3Key;
+      } else {
+        const response = await fetch(documentUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to download file: ${response.status} ${response.statusText}`);
+        }
+        const fileBuffer = Buffer.from(await response.arrayBuffer());
+
+        tempS3Key = `textract-temp/${Date.now()}_${Math.random().toString(36).substring(7)}.pdf`;
+        s3KeyToUse = tempS3Key;
+
+        const putCommand = new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: s3KeyToUse,
+          Body: fileBuffer,
+          ContentType: 'application/pdf',
+        });
+        await this.s3Client.send(putCommand);
+      }
+
+      const startCommand = new StartDocumentAnalysisCommand({
+        DocumentLocation: {
+          S3Object: {
+            Bucket: this.bucketName,
+            Name: s3KeyToUse,
+          },
+        },
+        FeatureTypes: ['TABLES', 'FORMS', 'LAYOUT'],
       });
 
-      if (debugOcr) {
-        console.log('[DEBUG OCR] Full OCR response:', JSON.stringify(ocrResult, null, 2));
+      const startResponse = await this.textractClient.send(startCommand);
+      const jobId = startResponse.JobId;
+
+      if (!jobId) {
+        throw new Error('Failed to start Textract job');
       }
 
-      // Extract text from OCR result
-      if (ocrResult && ocrResult.ParsedResults) {
-        const allText = ocrResult.ParsedResults.map(
-          (result: any) => result.ParsedText || '',
-        ).join('\n');
-
-        return allText;
+      const result = await this.waitForTextractCompletion(jobId);
+      return { text: this.extractTextFromBlocks(result.Blocks), blocks: result.Blocks };
+    } finally {
+      if (tempS3Key) {
+        try {
+          const deleteCommand = new DeleteObjectCommand({
+            Bucket: this.bucketName,
+            Key: tempS3Key,
+          });
+          await this.s3Client.send(deleteCommand);
+          console.log(`[Summarize] Cleaned up temp file: ${tempS3Key}`);
+        } catch (cleanupError) {
+          console.warn(`[Summarize] Failed to cleanup temp file ${tempS3Key}:`, cleanupError);
+        }
       }
-
-      throw new Error('No text extracted from OCR.space');
-    } catch (error) {
-      console.error('[OCR Error] Failed to extract text:', error);
-      throw error;
     }
+  }
+
+  private async waitForTextractCompletion(jobId: string): Promise<any> {
+    let status = 'IN_PROGRESS';
+    let allBlocks: any[] = [];
+    let nextToken: string | undefined;
+
+    while (status === 'IN_PROGRESS') {
+      await new Promise((resolve) => setTimeout(resolve, this.TEXTRACT_POLLING_INTERVAL));
+
+      const getCommand = new GetDocumentAnalysisCommand({ JobId: jobId });
+      const response = await this.textractClient.send(getCommand);
+      status = response.JobStatus || 'FAILED';
+
+      if (status === 'SUCCEEDED') {
+        allBlocks = response.Blocks || [];
+        nextToken = response.NextToken;
+
+        // Retrieve all pages if there are multiple
+        while (nextToken) {
+          const nextCommand = new GetDocumentAnalysisCommand({
+            JobId: jobId,
+            NextToken: nextToken,
+          });
+          const nextResponse = await this.textractClient.send(nextCommand);
+          allBlocks = allBlocks.concat(nextResponse.Blocks || []);
+          nextToken = nextResponse.NextToken;
+        }
+
+        return { JobId: jobId, JobStatus: status, Blocks: allBlocks };
+      } else if (status === 'FAILED') {
+        throw new Error(`Textract job ${jobId} failed`);
+      }
+    }
+  }
+
+  private extractTextFromBlocks(blocks: any[]): string {
+    if (!blocks || blocks.length === 0) {
+      return '';
+    }
+
+    const lines = blocks
+      .filter((block) => block.BlockType === 'LINE')
+      .map((block) => block.Text || '')
+      .filter((text) => text.length > 0);
+
+    return lines.join('\n');
   }
 
   private generateChatbaseMessage(data: string, chatbotId: string): any {
     const MAX_CHUNK_SIZE = 3000;
 
-    // Split text into chunks
     const chunks: string[] = [];
     for (let i = 0; i < data.length; i += MAX_CHUNK_SIZE) {
       chunks.push(data.slice(i, i + MAX_CHUNK_SIZE));
     }
 
-    // Build messages array
     const messages = [
       {
         role: 'user',
-        content: `
-          Tu vas recevoir un message en plusieurs parties.
+        content: `Tu vas recevoir un message en plusieurs parties.
           Ne réponds rien avant d'avoir reçu toutes les parties.
           Quand tu verras le message "FIN_DE_TRANSMISSION", tu devras :
           1. Considérer toutes les parties précédentes comme un seul document complet,
@@ -203,39 +273,29 @@ export class SummarizeService {
       },
     ];
 
-    console.log(
-      `  Sending ${chunks.length} chunk(s) (${data.length} total characters)`,
-    );
-
     return {
-      messages: messages,
-      chatbotId: chatbotId,
+      messages,
+      chatbotId,
       stream: false,
     };
   }
 
   private async callChatbase(textData: string, chatbotName: string, chatbotId: string): Promise<any> {
-    try {
-      const requestBody = this.generateChatbaseMessage(textData, chatbotId);
+    const requestBody = this.generateChatbaseMessage(textData, chatbotId);
 
-      const response = await fetch(this.chatbaseApiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.chatbaseBearerToken}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
+    const response = await fetch(this.chatbaseApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.chatbaseBearerToken}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
 
-      if (!response.ok) {
-        throw new Error(`Chatbase API error: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error(`[Chatbase ${chatbotName} Error]:`, error);
-      throw error;
+    if (!response.ok) {
+      throw new Error(`Chatbase ${chatbotName} error: ${response.status} ${response.statusText}`);
     }
+
+    return response.json();
   }
 }

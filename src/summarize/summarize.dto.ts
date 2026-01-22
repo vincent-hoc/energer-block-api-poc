@@ -19,9 +19,13 @@ export class SummarizeDto {
 
   @IsBoolean()
   @IsOptional()
-  debug_ocr?: boolean;
+  debug?: boolean;
 
   @IsString()
   @IsOptional()
   fost_key?: string;
+
+  @IsString()
+  @IsOptional()
+  s3_key?: string;
 }

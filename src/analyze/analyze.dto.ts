@@ -7,6 +7,10 @@ class DocumentInput {
 
   @IsString()
   document_url: string;
+
+  @IsOptional()
+  @IsString()
+  s3_key?: string;
 }
 
 export class AnalyzeDto {
