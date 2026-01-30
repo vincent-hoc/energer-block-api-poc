@@ -429,13 +429,13 @@ export class TestService {
         }
 
         .btn-submit.analyse {
-            background: linear-gradient(135deg, #004d52 0%, #006660 100%);
-            box-shadow: 0 4px 12px rgba(77, 101, 255, 0.3);
+            background: linear-gradient(135deg, #007f72 0%, #006660 100%);
+            box-shadow: 0 4px 12px rgba(0, 127, 114, 0.3);
         }
 
         .btn-submit.analyse:hover:not(:disabled) {
-            background: linear-gradient(135deg, #3d55ef 0%, #5356e1 100%);
-            box-shadow: 0 6px 16px rgba(77, 101, 255, 0.4);
+            background: linear-gradient(135deg, #006660 0%, #005550 100%);
+            box-shadow: 0 6px 16px rgba(0, 127, 114, 0.4);
             transform: translateY(-1px);
         }
 
@@ -768,6 +768,19 @@ export class TestService {
             color: #ef4444;
         }
 
+        .file-type-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #d0f5ed;
+            color: #007f72;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
         .step-item.active {
             border-color: #00b48f;
             background: white;
@@ -967,6 +980,27 @@ export class TestService {
             border-top-color: #00b48f;
             border-radius: 50%;
             animation: spinner-rotate 1s linear infinite;
+        }
+
+        .step-type-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #d0f5ed;
+            color: #007f72;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .step-fost-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #d0f5ed;
+            color: #007f72;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
         }
 
         /* Spinner */
@@ -2039,7 +2073,7 @@ export class TestService {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-    <title>Energer - Test Summarize API</title>
+    <title>Energer - Synthèse document</title>
     <style>${this.getCommonStyles()}</style>
 </head>
 <body>
@@ -2355,7 +2389,7 @@ export class TestService {
             document.getElementById('submitContainer').classList.remove('show');
         }
 
-        function updateStep(stepId, status, statusText) {
+        function updateStep(stepId, status, statusText, extraData) {
             const stepElement = document.getElementById('step-' + stepId);
             const statusElement = document.getElementById('step-' + stepId + '-status');
 
@@ -2366,7 +2400,14 @@ export class TestService {
                 statusElement.innerHTML = '<div class="step-compact-spinner"></div> En cours';
             } else if (status === 'completed') {
                 stepElement.classList.add('completed');
-                statusElement.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>';
+                let statusHtml = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>';
+                if (stepId === 'analyze' && extraData) {
+                    statusHtml = '<span class="step-type-tag">' + extraData + '</span> ' + statusHtml;
+                } else if (stepId === 'fost' && extraData && Array.isArray(extraData) && extraData.length > 0) {
+                    const fostTags = extraData.map(f => '<span class="step-fost-tag">' + formatDate(f) + '</span>').join(' ');
+                    statusHtml = fostTags + ' ' + statusHtml;
+                }
+                statusElement.innerHTML = statusHtml;
             } else if (status === 'error') {
                 stepElement.classList.add('error');
                 statusElement.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg> ' + (statusText || 'Erreur');
@@ -2456,7 +2497,7 @@ export class TestService {
 
                 if (!analyzeResponse.ok) throw new Error('Erreur Analyse');
                 analysisResult = await analyzeResponse.json();
-                updateStep('analyze', 'completed');
+                updateStep('analyze', 'completed', null, analysisResult.type_doc);
 
                 // Step 4: FOST identification
                 updateStep('fost', 'active');
@@ -2465,7 +2506,7 @@ export class TestService {
                 if (fostKey && fostKey.trim() !== '') {
                     // Use provided fost_key directly
                     fostsValue = [fostKey.trim()];
-                    updateStep('fost', 'completed');
+                    updateStep('fost', 'completed', null, fostsValue);
                 } else {
                     const fostResponse = await fetch('/api/summarize/fost', {
                         method: 'POST',
@@ -2481,7 +2522,7 @@ export class TestService {
                     if (!fostResponse.ok) throw new Error('Erreur FOST');
                     fostsResult = await fostResponse.json();
                     fostsValue = fostsResult;
-                    updateStep('fost', 'completed');
+                    updateStep('fost', 'completed', null, fostsValue);
                 }
 
                 // Step 5: Analyse de conformité
@@ -2646,7 +2687,7 @@ export class TestService {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-    <title>Energer - Test Analyse API</title>
+    <title>Energer - Analyse dossier</title>
     <style>${this.getCommonStyles()}
         /* Analyse page color overrides */
         .dropzone:hover { border-color: #007f72; }
@@ -2969,7 +3010,7 @@ export class TestService {
             updateFileList();
         }
 
-        function updateStep(stepId, status, statusText) {
+        function updateStep(stepId, status, statusText, extraData) {
             const stepElement = document.getElementById('step-' + stepId);
             const statusElement = document.getElementById('step-' + stepId + '-status');
 
@@ -2980,7 +3021,12 @@ export class TestService {
                 statusElement.innerHTML = '<div class="step-spinner"></div>';
             } else if (status === 'completed') {
                 stepElement.classList.add('completed');
-                statusElement.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>';
+                let statusHtml = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>';
+                if (stepId === 'fost' && extraData && Array.isArray(extraData) && extraData.length > 0) {
+                    const fostTags = extraData.map(f => '<span class="step-fost-tag">' + formatDate(f) + '</span>').join(' ');
+                    statusHtml = fostTags + ' ' + statusHtml;
+                }
+                statusElement.innerHTML = statusHtml;
             } else if (status === 'error') {
                 stepElement.classList.add('error');
                 statusElement.textContent = statusText || 'Erreur';
@@ -3011,22 +3057,30 @@ export class TestService {
             ).join('');
         }
 
-        function updateFileStatus(stepId, index, status, progress) {
+        function updateFileStatus(stepId, index, status, progressOrTypeDoc) {
             const fileEl = document.getElementById('step-' + stepId + '-file-' + index);
             if (!fileEl) return;
 
             fileEl.classList.remove('processing', 'completed', 'error', 'uploading');
             const statusEl = fileEl.querySelector('.step-file-status');
+            const nameEl = fileEl.querySelector('.step-file-name');
 
             if (status === 'uploading') {
                 fileEl.classList.add('uploading', 'processing');
-                const pct = progress || 0;
+                const pct = progressOrTypeDoc || 0;
                 statusEl.innerHTML = '<div class="upload-progress"><div class="progress-bar"><div class="progress-bar-fill" style="width: ' + pct + '%"></div></div><span class="progress-text">' + pct + '%</span></div>';
             } else if (status === 'processing') {
                 fileEl.classList.add('processing');
                 statusEl.innerHTML = '<div class="file-spinner"></div> En cours';
             } else if (status === 'completed') {
                 fileEl.classList.add('completed');
+                // If typeDoc is provided (for analyze step), add tag next to file name
+                if (stepId === 'analyze' && progressOrTypeDoc && typeof progressOrTypeDoc === 'string') {
+                    const existingTag = nameEl.querySelector('.file-type-tag');
+                    if (!existingTag) {
+                        nameEl.innerHTML = nameEl.textContent + ' <span class="file-type-tag">' + progressOrTypeDoc + '</span>';
+                    }
+                }
                 statusEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Terminé';
             } else if (status === 'error') {
                 fileEl.classList.add('error');
@@ -3180,7 +3234,7 @@ export class TestService {
 
                     if (!analyzeResponse.ok) throw new Error('Erreur Analyse ' + file.name);
                     const analyzeResult = await analyzeResponse.json();
-                    updateFileStatus('analyze', index, 'completed');
+                    updateFileStatus('analyze', index, 'completed', analyzeResult.type_doc);
                     analyzeCompleted++;
                     if (analyzeCompleted === totalFiles) updateStep('analyze', 'completed');
 
@@ -3208,7 +3262,7 @@ export class TestService {
 
                 if (!fostResponse.ok) throw new Error('Erreur FOST');
                 fostsValue = await fostResponse.json();
-                updateStep('fost', 'completed');
+                updateStep('fost', 'completed', null, fostsValue);
 
                 // Step 5: Analyse de conformité
                 updateStep('ocode', 'active');
