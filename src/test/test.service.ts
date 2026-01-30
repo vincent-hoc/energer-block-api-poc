@@ -1798,6 +1798,30 @@ export class TestService {
             return value;
         }
 
+        // Retry helper for API calls (max 5 attempts)
+        const MAX_RETRIES = 5;
+        const RETRY_DELAY = 1000; // 1 second between retries
+
+        async function fetchWithRetry(url, options, stepName) {
+            let lastError;
+            for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status);
+                    }
+                    return response;
+                } catch (error) {
+                    lastError = error;
+                    console.warn('[' + stepName + '] Tentative ' + attempt + '/' + MAX_RETRIES + ' échouée:', error.message);
+                    if (attempt < MAX_RETRIES) {
+                        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * attempt));
+                    }
+                }
+            }
+            throw new Error('Erreur ' + stepName + ' après ' + MAX_RETRIES + ' tentatives: ' + lastError.message);
+        }
+
         // Render extracted fields as structured table
         function renderExtractedFields(fields) {
             if (!fields || (typeof fields === 'object' && Object.keys(fields).length === 0)) return '<em>Aucun champ extrait</em>';
@@ -2449,21 +2473,19 @@ export class TestService {
                 const formData = new FormData();
                 formData.append('file', selectedFile);
 
-                const uploadResponse = await fetch('/api/upload', {
+                const uploadResponse = await fetchWithRetry('/api/upload', {
                     method: 'POST',
                     headers: {
                         'Authorization': 'Basic ' + token
                     },
                     body: formData
-                });
-
-                if (!uploadResponse.ok) throw new Error('Erreur upload');
+                }, 'Upload');
                 uploadResult = await uploadResponse.json();
                 updateStep('upload', 'completed');
 
                 // Step 2: OCR with Textract
                 updateStep('ocr', 'active');
-                const ocrResponse = await fetch('/api/summarize/ocr', {
+                const ocrResponse = await fetchWithRetry('/api/summarize/ocr', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2473,9 +2495,7 @@ export class TestService {
                         s3_key: uploadResult.s3_key,
                         debug: true
                     })
-                });
-
-                if (!ocrResponse.ok) throw new Error('Erreur OCR');
+                }, 'OCR');
                 ocrResult = await ocrResponse.json();
                 debugOcr = ocrResult.extracted_text;
                 debugBlocks = ocrResult.blocks;
@@ -2483,7 +2503,7 @@ export class TestService {
 
                 // Step 3: Analyze text
                 updateStep('analyze', 'active');
-                const analyzeResponse = await fetch('/api/summarize/analyze', {
+                const analyzeResponse = await fetchWithRetry('/api/summarize/analyze', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2493,9 +2513,7 @@ export class TestService {
                         extracted_text: ocrResult.extracted_text,
                         document_uuid: documentUuid
                     })
-                });
-
-                if (!analyzeResponse.ok) throw new Error('Erreur Analyse');
+                }, 'Analyse');
                 analysisResult = await analyzeResponse.json();
                 updateStep('analyze', 'completed', null, analysisResult.type_doc);
 
@@ -2508,7 +2526,7 @@ export class TestService {
                     fostsValue = [fostKey.trim()];
                     updateStep('fost', 'completed', null, fostsValue);
                 } else {
-                    const fostResponse = await fetch('/api/summarize/fost', {
+                    const fostResponse = await fetchWithRetry('/api/summarize/fost', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -2517,9 +2535,7 @@ export class TestService {
                         body: JSON.stringify({
                             analysis_result: analysisResult
                         })
-                    });
-
-                    if (!fostResponse.ok) throw new Error('Erreur FOST');
+                    }, 'FOST');
                     fostsResult = await fostResponse.json();
                     fostsValue = fostsResult;
                     updateStep('fost', 'completed', null, fostsValue);
@@ -2527,7 +2543,7 @@ export class TestService {
 
                 // Step 5: Analyse de conformité
                 updateStep('ocode', 'active');
-                const ocodeResponse = await fetch('/api/summarize/ocode', {
+                const ocodeResponse = await fetchWithRetry('/api/summarize/ocode', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2537,9 +2553,7 @@ export class TestService {
                         fosts: fostsValue,
                         documents: [analysisResult]
                     })
-                });
-
-                if (!ocodeResponse.ok) throw new Error('Erreur Analyse de conformité');
+                }, 'Conformité');
                 ocodeResult = await ocodeResponse.json();
                 updateStep('ocode', 'completed');
 
@@ -3134,40 +3148,54 @@ export class TestService {
                 let ocrCompleted = 0;
                 let analyzeCompleted = 0;
 
-                // Helper function for upload with progress
-                function uploadWithProgress(file, index) {
-                    return new Promise((resolve, reject) => {
-                        const xhr = new XMLHttpRequest();
-                        const formData = new FormData();
-                        formData.append('file', file);
+                // Helper function for upload with progress and retry
+                async function uploadWithProgress(file, index) {
+                    let lastError;
+                    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                        try {
+                            const result = await new Promise((resolve, reject) => {
+                                const xhr = new XMLHttpRequest();
+                                const formData = new FormData();
+                                formData.append('file', file);
 
-                        xhr.upload.onprogress = (e) => {
-                            if (e.lengthComputable) {
-                                const percent = Math.round((e.loaded / e.total) * 100);
-                                updateUploadProgress(index, percent);
+                                xhr.upload.onprogress = (e) => {
+                                    if (e.lengthComputable) {
+                                        const percent = Math.round((e.loaded / e.total) * 100);
+                                        updateUploadProgress(index, percent);
+                                    }
+                                };
+
+                                xhr.onload = () => {
+                                    if (xhr.status >= 200 && xhr.status < 300) {
+                                        try {
+                                            resolve(JSON.parse(xhr.responseText));
+                                        } catch (e) {
+                                            reject(new Error('Erreur parsing'));
+                                        }
+                                    } else {
+                                        reject(new Error('HTTP ' + xhr.status));
+                                    }
+                                };
+
+                                xhr.onerror = () => reject(new Error('Erreur réseau'));
+                                xhr.ontimeout = () => reject(new Error('Timeout'));
+
+                                xhr.open('POST', '/api/upload');
+                                xhr.setRequestHeader('Authorization', 'Basic ' + token);
+                                xhr.timeout = 300000; // 5 minutes timeout
+                                xhr.send(formData);
+                            });
+                            return result;
+                        } catch (error) {
+                            lastError = error;
+                            console.warn('[Upload ' + file.name + '] Tentative ' + attempt + '/' + MAX_RETRIES + ' échouée:', error.message);
+                            if (attempt < MAX_RETRIES) {
+                                updateUploadProgress(index, 0); // Reset progress for retry
+                                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * attempt));
                             }
-                        };
-
-                        xhr.onload = () => {
-                            if (xhr.status >= 200 && xhr.status < 300) {
-                                try {
-                                    resolve(JSON.parse(xhr.responseText));
-                                } catch (e) {
-                                    reject(new Error('Erreur parsing upload ' + file.name));
-                                }
-                            } else {
-                                reject(new Error('Erreur upload ' + file.name + ' (HTTP ' + xhr.status + ')'));
-                            }
-                        };
-
-                        xhr.onerror = () => reject(new Error('Erreur réseau upload ' + file.name));
-                        xhr.ontimeout = () => reject(new Error('Timeout upload ' + file.name));
-
-                        xhr.open('POST', '/api/upload');
-                        xhr.setRequestHeader('Authorization', 'Basic ' + token);
-                        xhr.timeout = 300000; // 5 minutes timeout
-                        xhr.send(formData);
-                    });
+                        }
+                    }
+                    throw new Error('Erreur Upload ' + file.name + ' après ' + MAX_RETRIES + ' tentatives: ' + lastError.message);
                 }
 
                 // Pipeline: each file goes through upload → ocr → analyze independently
@@ -3191,7 +3219,7 @@ export class TestService {
 
                     // Step 2: OCR (starts immediately after upload)
                     updateFileStatus('ocr', index, 'processing');
-                    const ocrResponse = await fetch('/api/summarize/ocr', {
+                    const ocrResponse = await fetchWithRetry('/api/summarize/ocr', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -3201,9 +3229,7 @@ export class TestService {
                             s3_key: uploadedFile.s3_key,
                             debug: true
                         })
-                    });
-
-                    if (!ocrResponse.ok) throw new Error('Erreur OCR ' + file.name);
+                    }, 'OCR ' + file.name);
                     const ocrResult = await ocrResponse.json();
                     updateFileStatus('ocr', index, 'completed');
                     ocrCompleted++;
@@ -3220,7 +3246,7 @@ export class TestService {
 
                     // Step 3: Analyze (starts immediately after OCR)
                     updateFileStatus('analyze', index, 'processing');
-                    const analyzeResponse = await fetch('/api/summarize/analyze', {
+                    const analyzeResponse = await fetchWithRetry('/api/summarize/analyze', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -3230,9 +3256,7 @@ export class TestService {
                             extracted_text: ocrData.extracted_text,
                             document_uuid: ocrData.document_uuid
                         })
-                    });
-
-                    if (!analyzeResponse.ok) throw new Error('Erreur Analyse ' + file.name);
+                    }, 'Analyse ' + file.name);
                     const analyzeResult = await analyzeResponse.json();
                     updateFileStatus('analyze', index, 'completed', analyzeResult.type_doc);
                     analyzeCompleted++;
@@ -3249,7 +3273,7 @@ export class TestService {
 
                 // Step 4: FOST identification
                 updateStep('fost', 'active');
-                const fostResponse = await fetch('/api/summarize/fost', {
+                const fostResponse = await fetchWithRetry('/api/summarize/fost', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3258,15 +3282,13 @@ export class TestService {
                     body: JSON.stringify({
                         analysis_result: { documents: analysisResults }
                     })
-                });
-
-                if (!fostResponse.ok) throw new Error('Erreur FOST');
+                }, 'FOST');
                 fostsValue = await fostResponse.json();
                 updateStep('fost', 'completed', null, fostsValue);
 
                 // Step 5: Analyse de conformité
                 updateStep('ocode', 'active');
-                const ocodeResponse = await fetch('/api/summarize/ocode', {
+                const ocodeResponse = await fetchWithRetry('/api/summarize/ocode', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3276,9 +3298,7 @@ export class TestService {
                         fosts: fostsValue,
                         documents: analysisResults
                     })
-                });
-
-                if (!ocodeResponse.ok) throw new Error('Erreur Analyse de conformité');
+                }, 'Conformité');
                 ocodeResult = await ocodeResponse.json();
                 updateStep('ocode', 'completed');
 
