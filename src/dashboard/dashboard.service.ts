@@ -23,7 +23,7 @@ export class DashboardService {
 
         body {
             font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f7fa;
+            background: #F0EFEC;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -43,7 +43,7 @@ export class DashboardService {
         }
 
         .header-logo img {
-            height: 32px;
+            height: 48px;
         }
 
         .header-user {
@@ -55,7 +55,7 @@ export class DashboardService {
         .user-avatar {
             width: 36px;
             height: 36px;
-            background: #4d65ff;
+            background: #dedcd4;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -134,11 +134,11 @@ export class DashboardService {
         }
 
         .api-card.summarize:hover {
-            border-color: #22c55e;
+            border-color: #00b48f;
         }
 
         .api-card.analyse:hover {
-            border-color: #4d65ff;
+            border-color: #007f72;
         }
 
         .api-card-icon {
@@ -152,11 +152,11 @@ export class DashboardService {
         }
 
         .api-card.summarize .api-card-icon {
-            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            background: linear-gradient(135deg, #d0f5ed 0%, #a7ede0 100%);
         }
 
         .api-card.analyse .api-card-icon {
-            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            background: linear-gradient(135deg, #ccebe8 0%, #a3ddd8 100%);
         }
 
         .api-card-icon svg {
@@ -165,11 +165,11 @@ export class DashboardService {
         }
 
         .api-card.summarize .api-card-icon svg {
-            color: #16a34a;
+            color: #00b48f;
         }
 
         .api-card.analyse .api-card-icon svg {
-            color: #4d65ff;
+            color: #007f72;
         }
 
         .api-card-title {
@@ -200,7 +200,7 @@ export class DashboardService {
         }
 
         .footer a {
-            color: #4d65ff;
+            color: #004d52;
             text-decoration: none;
         }
 
@@ -222,8 +222,7 @@ export class DashboardService {
 
     <main class="main">
         <div class="container">
-            <h1 class="title">API Test Platform</h1>
-            <p class="subtitle">Selectionnez l'API que vous souhaitez tester</p>
+            <h1 class="title">Plateforme de test<br>SCAN</h1>
 
             <div class="buttons-container">
                 <div class="api-card summarize" onclick="window.location.href='/test/summarize'">
@@ -232,7 +231,7 @@ export class DashboardService {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                     </div>
-                    <h2 class="api-card-title">Summarize</h2>
+                    <h2 class="api-card-title">Synthèse document</h2>
                     <p class="api-card-description">Extraction et analyse d'un document unique avec identification FOST</p>
                 </div>
 
@@ -242,7 +241,7 @@ export class DashboardService {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                         </svg>
                     </div>
-                    <h2 class="api-card-title">Analyse</h2>
+                    <h2 class="api-card-title">Analyse dossier</h2>
                     <p class="api-card-description">Analyse complete d'un dossier multi-documents avec conformite</p>
                 </div>
             </div>
