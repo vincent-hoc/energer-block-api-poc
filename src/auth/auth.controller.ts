@@ -16,11 +16,28 @@ export class AuthController {
     // Add demo user
     this.users.set('demo', 'demo2026');
 
-    // Add configured user from environment
+    // Add configured user from environment (legacy single user)
     const envUsername = this.configService.get<string>('API_AUTH_USERNAME');
     const envPassword = this.configService.get<string>('API_AUTH_PASSWORD');
     if (envUsername && envPassword) {
       this.users.set(envUsername, envPassword);
+    }
+
+    // Add multiple users from JSON environment variable
+    const usersJson = this.configService.get<string>('API_AUTH_USERS');
+    if (usersJson) {
+      try {
+        const usersList = JSON.parse(usersJson);
+        if (Array.isArray(usersList)) {
+          usersList.forEach((user: { username: string; password: string }) => {
+            if (user.username && user.password) {
+              this.users.set(user.username, user.password);
+            }
+          });
+        }
+      } catch {
+        console.warn('[Auth] Failed to parse API_AUTH_USERS JSON');
+      }
     }
   }
 
