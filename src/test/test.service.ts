@@ -1045,6 +1045,7 @@ export class TestService {
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-wrap: nowrap;
         }
 
         .result-title {
@@ -1073,6 +1074,7 @@ export class TestService {
         .tag-fost {
             background: #d0f5ed;
             color: #009a7a;
+            white-space: nowrap;
         }
 
         .tag-keyword {
@@ -1822,6 +1824,21 @@ export class TestService {
             throw new Error('Erreur ' + stepName + ' après ' + MAX_RETRIES + ' tentatives: ' + lastError.message);
         }
 
+        // Extract FOST array from various response formats
+        function extractFostArray(response) {
+            if (!response) return [];
+            // If already an array, return it
+            if (Array.isArray(response)) return response;
+            // If object with fosts property
+            if (response.fosts && Array.isArray(response.fosts)) return response.fosts;
+            // If object with fost property (singular)
+            if (response.fost) return [response.fost];
+            // If string, wrap in array
+            if (typeof response === 'string') return [response];
+            // Otherwise return empty
+            return [];
+        }
+
         // Render extracted fields as structured table
         function renderExtractedFields(fields) {
             if (!fields || (typeof fields === 'object' && Object.keys(fields).length === 0)) return '<em>Aucun champ extrait</em>';
@@ -2540,7 +2557,7 @@ export class TestService {
                         })
                     }, 'FOST');
                     fostsResult = await fostResponse.json();
-                    fostsValue = fostsResult;
+                    fostsValue = extractFostArray(fostsResult);
                     updateStep('fost', 'completed', null, fostsValue);
                 }
 
@@ -3289,7 +3306,8 @@ export class TestService {
                         analysis_result: { documents: analysisResults }
                     })
                 }, 'FOST');
-                fostsValue = await fostResponse.json();
+                const fostResult = await fostResponse.json();
+                fostsValue = extractFostArray(fostResult);
                 updateStep('fost', 'completed', null, fostsValue);
 
                 // Step 5: Analyse de conformité
