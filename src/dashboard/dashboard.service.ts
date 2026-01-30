@@ -112,9 +112,9 @@ export class DashboardService {
 
         .buttons-container {
             display: flex;
-            gap: 32px;
-            justify-content: center;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 24px;
+            align-items: center;
         }
 
         .api-card {
@@ -125,7 +125,9 @@ export class DashboardService {
             cursor: pointer;
             transition: all 0.3s ease;
             border: 2px solid transparent;
-            min-width: 280px;
+            width: 640px;
+            max-width: 90vw;
+            text-align: center;
         }
 
         .api-card:hover {
