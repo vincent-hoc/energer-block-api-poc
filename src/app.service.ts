@@ -10,7 +10,7 @@ export class AppService {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="https://cdn.prod.website-files.com/684fc8bdc6e7edd505c58655/69147295c08d5fe3c86bbbf7_energer-logo_energer-default%20black.svg">
-    <title>Energer Block API - Login</title>
+    <title>Energer - Connexion</title>
     <style>
         * {
             margin: 0;
