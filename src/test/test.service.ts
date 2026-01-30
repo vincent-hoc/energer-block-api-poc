@@ -2427,9 +2427,12 @@ export class TestService {
                 let statusHtml = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>';
                 if (stepId === 'analyze' && extraData) {
                     statusHtml = '<span class="step-type-tag">' + extraData + '</span> ' + statusHtml;
-                } else if (stepId === 'fost' && extraData && Array.isArray(extraData) && extraData.length > 0) {
-                    const fostTags = extraData.map(f => '<span class="step-fost-tag">' + formatDate(f) + '</span>').join(' ');
-                    statusHtml = fostTags + ' ' + statusHtml;
+                } else if (stepId === 'fost' && extraData) {
+                    const fostArray = Array.isArray(extraData) ? extraData : [extraData];
+                    if (fostArray.length > 0 && fostArray[0]) {
+                        const fostTags = fostArray.map(f => '<span class="step-fost-tag">' + formatDate(String(f)) + '</span>').join(' ');
+                        statusHtml = fostTags + ' ' + statusHtml;
+                    }
                 }
                 statusElement.innerHTML = statusHtml;
             } else if (status === 'error') {
@@ -3036,9 +3039,12 @@ export class TestService {
             } else if (status === 'completed') {
                 stepElement.classList.add('completed');
                 let statusHtml = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>';
-                if (stepId === 'fost' && extraData && Array.isArray(extraData) && extraData.length > 0) {
-                    const fostTags = extraData.map(f => '<span class="step-fost-tag">' + formatDate(f) + '</span>').join(' ');
-                    statusHtml = fostTags + ' ' + statusHtml;
+                if (stepId === 'fost' && extraData) {
+                    const fostArray = Array.isArray(extraData) ? extraData : [extraData];
+                    if (fostArray.length > 0 && fostArray[0]) {
+                        const fostTags = fostArray.map(f => '<span class="step-fost-tag">' + formatDate(String(f)) + '</span>').join(' ');
+                        statusHtml = fostTags + ' ' + statusHtml;
+                    }
                 }
                 statusElement.innerHTML = statusHtml;
             } else if (status === 'error') {
