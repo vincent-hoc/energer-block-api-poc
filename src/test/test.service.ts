@@ -12,7 +12,7 @@ export class TestService {
 
         body {
             font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f7fa;
+            background: #F0EFEC;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -38,7 +38,7 @@ export class TestService {
         }
 
         .header-logo img {
-            height: 32px;
+            height: 48px;
         }
 
         .btn-back {
@@ -117,7 +117,7 @@ export class TestService {
         }
 
         .toggle-switch input:checked + .toggle-slider {
-            background-color: #4d65ff;
+            background-color: #004d52;
         }
 
         .toggle-switch input:checked + .toggle-slider:before {
@@ -127,7 +127,7 @@ export class TestService {
         .user-avatar {
             width: 36px;
             height: 36px;
-            background: #4d65ff;
+            background: #dedcd4;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -197,18 +197,18 @@ export class TestService {
         }
 
         .dropzone:hover {
-            border-color: #22c55e;
+            border-color: #00b48f;
             background: #f0fdf4;
         }
 
         .dropzone.dragover {
-            border-color: #22c55e;
+            border-color: #00b48f;
             background: #f0fdf4;
             border-style: solid;
         }
 
         .dropzone.has-file {
-            border-color: #22c55e;
+            border-color: #00b48f;
             background: #f0fdf4;
             border-style: solid;
         }
@@ -227,7 +227,7 @@ export class TestService {
 
         .dropzone:hover .dropzone-icon,
         .dropzone.dragover .dropzone-icon {
-            background: #dcfce7;
+            background: #d0f5ed;
         }
 
         .dropzone-icon svg {
@@ -238,7 +238,7 @@ export class TestService {
 
         .dropzone:hover .dropzone-icon svg,
         .dropzone.dragover .dropzone-icon svg {
-            color: #22c55e;
+            color: #00b48f;
         }
 
         .dropzone h3 {
@@ -348,7 +348,7 @@ export class TestService {
 
         .file-uuid input:focus {
             outline: none;
-            border-color: #4d65ff;
+            border-color: #004d52;
             box-shadow: 0 0 0 2px rgba(77, 101, 255, 0.1);
         }
 
@@ -370,8 +370,8 @@ export class TestService {
         }
 
         .file-status.complete {
-            background: #dcfce7;
-            color: #16a34a;
+            background: #d0f5ed;
+            color: #009a7a;
         }
 
         .file-status.error {
@@ -418,18 +418,18 @@ export class TestService {
         }
 
         .btn-submit.summarize {
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            background: linear-gradient(135deg, #00b48f 0%, #009a7a 100%);
             box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
         }
 
         .btn-submit.summarize:hover:not(:disabled) {
-            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            background: linear-gradient(135deg, #009a7a 0%, #007f72 100%);
             box-shadow: 0 6px 16px rgba(34, 197, 94, 0.4);
             transform: translateY(-1px);
         }
 
         .btn-submit.analyse {
-            background: linear-gradient(135deg, #4d65ff 0%, #6366f1 100%);
+            background: linear-gradient(135deg, #004d52 0%, #006660 100%);
             box-shadow: 0 4px 12px rgba(77, 101, 255, 0.3);
         }
 
@@ -563,6 +563,24 @@ export class TestService {
             margin: 0;
         }
 
+        .debug-step-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            padding: 12px 0 8px 0;
+            margin-top: 8px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .debug-step-label:first-child {
+            border-top: none;
+            margin-top: 0;
+        }
+
+        .debug-file-accordion {
+            margin-left: 16px;
+        }
+
         /* Loading spinner */
         .loading-container {
             margin-top: 24px;
@@ -579,7 +597,7 @@ export class TestService {
             width: 48px;
             height: 48px;
             border: 4px solid #e5e7eb;
-            border-top-color: #22c55e;
+            border-top-color: #00b48f;
             border-radius: 50%;
             animation: spinner-rotate 1s linear infinite;
             margin: 0 auto 16px;
@@ -613,6 +631,344 @@ export class TestService {
             80%, 100% { content: '...'; }
         }
 
+        /* Step Progress */
+        .steps-container {
+            display: none;
+            padding: 24px;
+            background: #f9fafb;
+            border-radius: 12px;
+            margin-top: 16px;
+        }
+
+        .steps-container.show {
+            display: block;
+        }
+
+        .steps-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .step-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .step-files {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            margin-left: 44px;
+            font-size: 12px;
+        }
+
+        .step-item.active .step-files,
+        .step-item.completed .step-files {
+            display: flex;
+        }
+
+        .step-file {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px;
+            background: #f9fafb;
+            border-radius: 4px;
+        }
+
+        .step-file-name {
+            flex: 1;
+            color: #374151;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .step-file-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #6b7280;
+        }
+
+        .step-file.processing .step-file-status {
+            color: #00b48f;
+        }
+
+        .step-file.completed .step-file-status {
+            color: #00b48f;
+        }
+
+        .step-file.completed .step-file-name {
+            color: #00b48f;
+        }
+
+        .file-spinner {
+            width: 12px;
+            height: 12px;
+            border: 2px solid #e5e7eb;
+            border-top-color: #00b48f;
+            border-radius: 50%;
+            animation: spinner-rotate 1s linear infinite;
+        }
+
+        .upload-progress {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 80px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 2px;
+            overflow: hidden;
+            min-width: 50px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: #00b48f;
+            border-radius: 2px;
+            transition: width 0.1s ease;
+        }
+
+        .progress-text {
+            font-size: 11px;
+            color: #6b7280;
+            min-width: 35px;
+            text-align: right;
+        }
+
+        .step-file.error {
+            background: #fef2f2;
+        }
+
+        .step-file.error .step-file-name {
+            color: #ef4444;
+        }
+
+        .step-file.error .step-file-status {
+            color: #ef4444;
+        }
+
+        .step-item.active {
+            border-color: #00b48f;
+            background: white;
+        }
+
+        .step-item.completed {
+            border-color: #00b48f;
+            background: white;
+        }
+
+        .step-item.error {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .step-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e5e7eb;
+            color: #6b7280;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .step-item.active .step-icon {
+            background: #00b48f;
+            color: white;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .step-item.completed .step-icon {
+            background: #00b48f;
+            color: white;
+        }
+
+        .step-item.error .step-icon {
+            background: #ef4444;
+            color: white;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: #111827;
+            font-size: 14px;
+        }
+
+        .step-item.active .step-title {
+            color: #00b48f;
+        }
+
+        .step-description {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        .step-status {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .step-item.active .step-status {
+            color: #00b48f;
+        }
+
+        .step-item.completed .step-status {
+            color: #00b48f;
+        }
+
+        .step-item.error .step-status {
+            color: #ef4444;
+        }
+
+        .step-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e5e7eb;
+            border-top-color: #00b48f;
+            border-radius: 50%;
+            animation: spinner-rotate 1s linear infinite;
+        }
+
+        /* Compact steps for Summarize page */
+        .steps-compact {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .step-compact {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .step-compact-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            background: #f3f4f6;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: 600;
+            color: #6b7280;
+            flex-shrink: 0;
+        }
+
+        .step-compact-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .step-compact-label {
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .step-compact-description {
+            font-size: 11px;
+            color: #9ca3af;
+            font-weight: 400;
+        }
+
+        .step-compact-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .step-compact.active {
+            border-color: #00b48f;
+            background: #f0fdf9;
+        }
+
+        .step-compact.active .step-compact-number {
+            background: #00b48f;
+            color: white;
+        }
+
+        .step-compact.active .step-compact-status {
+            color: #00b48f;
+        }
+
+        .step-compact.completed .step-compact-number {
+            background: #00b48f;
+            color: white;
+        }
+
+        .step-compact.completed .step-compact-status {
+            color: #00b48f;
+        }
+
+        .step-compact.error {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .step-compact.error .step-compact-number {
+            background: #ef4444;
+            color: white;
+        }
+
+        .step-compact.error .step-compact-status {
+            color: #ef4444;
+        }
+
+        .step-compact-spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #e5e7eb;
+            border-top-color: #00b48f;
+            border-radius: 50%;
+            animation: spinner-rotate 1s linear infinite;
+        }
+
         /* Spinner */
         .spinner {
             display: inline-block;
@@ -640,9 +996,21 @@ export class TestService {
         .result-header {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 12px;
             margin-bottom: 16px;
-            flex-wrap: wrap;
+        }
+
+        .result-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .result-header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .result-title {
@@ -664,13 +1032,13 @@ export class TestService {
         }
 
         .tag-type {
-            background: #e0e7ff;
-            color: #4338ca;
+            background: #ccebe8;
+            color: #007f72;
         }
 
         .tag-fost {
-            background: #dcfce7;
-            color: #16a34a;
+            background: #d0f5ed;
+            color: #009a7a;
         }
 
         .tag-keyword {
@@ -700,7 +1068,7 @@ export class TestService {
             background: #f9fafb;
             padding: 16px;
             border-radius: 8px;
-            border-left: 4px solid #4d65ff;
+            border-left: 4px solid #004d52;
         }
 
         .keywords-container {
@@ -770,7 +1138,7 @@ export class TestService {
         }
 
         .category-header {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            background: linear-gradient(135deg, #006660 0%, #007f72 100%);
             color: white;
             padding: 12px 16px;
             font-weight: 600;
@@ -876,8 +1244,8 @@ export class TestService {
         }
 
         .audit-global-status.status-conforme {
-            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-            border: 2px solid #22c55e;
+            background: linear-gradient(135deg, #d0f5ed 0%, #a7ede0 100%);
+            border: 2px solid #00b48f;
             color: #166534;
         }
 
@@ -906,7 +1274,7 @@ export class TestService {
         }
 
         .detail-type {
-            background: #6366f1;
+            background: #006660;
             color: white;
             padding: 6px 14px;
             border-radius: 6px;
@@ -968,7 +1336,7 @@ export class TestService {
         }
 
         .checklist-item.item-ok {
-            border-left: 4px solid #22c55e;
+            border-left: 4px solid #00b48f;
         }
 
         .checklist-item.item-ko {
@@ -1011,8 +1379,8 @@ export class TestService {
         }
 
         .item-ok .check-icon {
-            color: #22c55e;
-            background: #dcfce7;
+            color: #00b48f;
+            background: #d0f5ed;
         }
 
         .item-ko .check-icon {
@@ -1040,7 +1408,7 @@ export class TestService {
         }
 
         .badge-ok {
-            background: #dcfce7;
+            background: #d0f5ed;
             color: #166534;
         }
 
@@ -1116,7 +1484,7 @@ export class TestService {
 
         .form-field input:focus {
             outline: none;
-            border-color: #22c55e;
+            border-color: #00b48f;
             box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
         }
 
@@ -1139,7 +1507,7 @@ export class TestService {
         }
 
         .footer a {
-            color: #4d65ff;
+            color: #004d52;
             text-decoration: none;
         }
 
@@ -1171,7 +1539,7 @@ export class TestService {
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(135deg, #4d65ff 0%, #6366f1 100%);
+            background: linear-gradient(135deg, #004d52 0%, #006660 100%);
             border-radius: 4px;
             transition: width 0.3s ease;
             width: 0%;
@@ -1224,7 +1592,7 @@ export class TestService {
             justify-content: center;
             width: 32px;
             height: 32px;
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            background: linear-gradient(135deg, #006660 0%, #007f72 100%);
             color: white;
             border-radius: 8px;
             font-size: 14px;
@@ -1607,8 +1975,8 @@ export class TestService {
             const total = checkList.length;
 
             let html = '<div class="checklist-summary">';
-            html += '<span class="summary-ok">' + okCount + ' conformes</span>';
-            html += '<span class="summary-ko">' + koCount + ' non conformes</span>';
+            html += '<span class="summary-ok">' + okCount + ' conformités</span>';
+            html += '<span class="summary-ko">' + koCount + ' non-conformités</span>';
             if (naCount > 0) {
                 html += '<span class="summary-na" style="color:#6b7280;">' + naCount + ' N/A</span>';
             }
@@ -1701,14 +2069,14 @@ export class TestService {
     </header>
 
     <main class="main">
-        <h1 class="page-title">Test API Summarize</h1>
+        <h1 class="page-title">Synthèse document</h1>
         <p class="page-subtitle">Deposez un fichier PDF pour tester l'extraction et l'analyse</p>
 
         <div class="dropzone-card">
             <div class="form-fields">
                 <div class="form-field">
-                    <label for="vaultUuid">Vault UUID</label>
-                    <input type="text" id="vaultUuid" placeholder="UUID du vault">
+                    <label for="vaultUuid">Opération UUID</label>
+                    <input type="text" id="vaultUuid" placeholder="UUID de l'opération">
                 </div>
                 <div class="form-field">
                     <label for="documentUuid">Document UUID</label>
@@ -1736,9 +2104,49 @@ export class TestService {
                 <div id="fileItems"></div>
             </div>
 
-            <div class="loading-container" id="loadingContainer">
-                <div class="loading-spinner"></div>
-                <p class="loading-text">Traitement en cours<span class="loading-dots"></span></p>
+            <div class="steps-container" id="stepsContainer">
+                <div class="steps-compact">
+                    <div class="step-compact" id="step-upload">
+                        <div class="step-compact-number">1</div>
+                        <div class="step-compact-content">
+                            <div class="step-compact-label">Upload du fichier</div>
+                            <div class="step-compact-description">Envoi du document vers le serveur</div>
+                        </div>
+                        <div class="step-compact-status" id="step-upload-status">En attente</div>
+                    </div>
+                    <div class="step-compact" id="step-ocr">
+                        <div class="step-compact-number">2</div>
+                        <div class="step-compact-content">
+                            <div class="step-compact-label">Extraction OCR</div>
+                            <div class="step-compact-description">Extraction du texte brut</div>
+                        </div>
+                        <div class="step-compact-status" id="step-ocr-status">En attente</div>
+                    </div>
+                    <div class="step-compact" id="step-analyze">
+                        <div class="step-compact-number">3</div>
+                        <div class="step-compact-content">
+                            <div class="step-compact-label">Analyse du document</div>
+                            <div class="step-compact-description">Synthèse et extraction des informations</div>
+                        </div>
+                        <div class="step-compact-status" id="step-analyze-status">En attente</div>
+                    </div>
+                    <div class="step-compact" id="step-fost">
+                        <div class="step-compact-number">4</div>
+                        <div class="step-compact-content">
+                            <div class="step-compact-label">Identification FOST</div>
+                            <div class="step-compact-description">Classification de la FOST et de sa version</div>
+                        </div>
+                        <div class="step-compact-status" id="step-fost-status">En attente</div>
+                    </div>
+                    <div class="step-compact" id="step-ocode">
+                        <div class="step-compact-number">5</div>
+                        <div class="step-compact-content">
+                            <div class="step-compact-label">Analyse de conformité</div>
+                            <div class="step-compact-description">Vérification des critères de conformité</div>
+                        </div>
+                        <div class="step-compact-status" id="step-ocode-status">En attente</div>
+                    </div>
+                </div>
             </div>
 
             <div class="submit-container" id="submitContainer">
@@ -1749,7 +2157,7 @@ export class TestService {
                         <line x1="16" y1="13" x2="8" y2="13"></line>
                         <line x1="16" y1="17" x2="8" y2="17"></line>
                     </svg>
-                    Lancer Summarize
+                    Lancer l'analyse
                 </button>
             </div>
         </div>
@@ -1791,24 +2199,22 @@ export class TestService {
             </div>
 
             <!-- Debug sections (shown at bottom when debug mode enabled) -->
-            <div class="debug-section" id="debugApiSection" data-has-content="false">
-                <div class="debug-accordion" id="accordion-api">
-                    <div class="debug-accordion-header" onclick="toggleAccordion('api')">
-                        <span>Réponse API complète (JSON)</span>
+            <div class="debug-section" id="debugSection" data-has-content="false">
+                <div class="debug-accordion" id="accordion-upload">
+                    <div class="debug-accordion-header" onclick="toggleAccordion('upload')">
+                        <span>1. OCR texte brut</span>
                         <svg class="arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M6 9l6 6 6-6"/>
                         </svg>
                     </div>
-                    <div class="debug-accordion-content" id="accordion-content-api">
-                        <pre id="debugApiContent"></pre>
+                    <div class="debug-accordion-content" id="accordion-content-upload">
+                        <pre id="debugUploadContent"></pre>
                     </div>
                 </div>
-            </div>
 
-            <div class="debug-section" id="debugOcrSection" data-has-content="false">
                 <div class="debug-accordion" id="accordion-ocr">
                     <div class="debug-accordion-header" onclick="toggleAccordion('ocr')">
-                        <span>debug_OCR (Texte brut)</span>
+                        <span>2. Extraction OCR</span>
                         <svg class="arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M6 9l6 6 6-6"/>
                         </svg>
@@ -1817,18 +2223,40 @@ export class TestService {
                         <pre id="debugOcrContent"></pre>
                     </div>
                 </div>
-            </div>
 
-            <div class="debug-section" id="debugJsonSection" data-has-content="false">
-                <div class="debug-accordion" id="accordion-json">
-                    <div class="debug-accordion-header" onclick="toggleAccordion('json')">
-                        <span>debug_OCR_JSON (Blocs Textract)</span>
+                <div class="debug-accordion" id="accordion-extraction">
+                    <div class="debug-accordion-header" onclick="toggleAccordion('extraction')">
+                        <span>3. Analyse du document</span>
                         <svg class="arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M6 9l6 6 6-6"/>
                         </svg>
                     </div>
-                    <div class="debug-accordion-content" id="accordion-content-json">
-                        <pre id="debugJsonContent"></pre>
+                    <div class="debug-accordion-content" id="accordion-content-extraction">
+                        <pre id="debugExtractionContent"></pre>
+                    </div>
+                </div>
+
+                <div class="debug-accordion" id="accordion-fost">
+                    <div class="debug-accordion-header" onclick="toggleAccordion('fost')">
+                        <span>4. Identification FOST</span>
+                        <svg class="arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                    </div>
+                    <div class="debug-accordion-content" id="accordion-content-fost">
+                        <pre id="debugFostContent"></pre>
+                    </div>
+                </div>
+
+                <div class="debug-accordion" id="accordion-analyse">
+                    <div class="debug-accordion-header" onclick="toggleAccordion('analyse')">
+                        <span>5. Analyse de conformité</span>
+                        <svg class="arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                    </div>
+                    <div class="debug-accordion-content" id="accordion-content-analyse">
+                        <pre id="debugAnalyseContent"></pre>
                     </div>
                 </div>
             </div>
@@ -1927,21 +2355,56 @@ export class TestService {
             document.getElementById('submitContainer').classList.remove('show');
         }
 
+        function updateStep(stepId, status, statusText) {
+            const stepElement = document.getElementById('step-' + stepId);
+            const statusElement = document.getElementById('step-' + stepId + '-status');
+
+            stepElement.classList.remove('active', 'completed', 'error');
+
+            if (status === 'active') {
+                stepElement.classList.add('active');
+                statusElement.innerHTML = '<div class="step-compact-spinner"></div> En cours';
+            } else if (status === 'completed') {
+                stepElement.classList.add('completed');
+                statusElement.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>';
+            } else if (status === 'error') {
+                stepElement.classList.add('error');
+                statusElement.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg> ' + (statusText || 'Erreur');
+            } else {
+                statusElement.textContent = statusText || 'En attente';
+            }
+        }
+
+        function resetSteps() {
+            ['upload', 'ocr', 'analyze', 'fost', 'ocode'].forEach(step => {
+                updateStep(step, 'pending', 'En attente');
+            });
+        }
+
         async function submitSummarize() {
             if (!selectedFile) return;
 
             const btnSubmit = document.getElementById('btnSubmit');
-            const loadingContainer = document.getElementById('loadingContainer');
+            const stepsContainer = document.getElementById('stepsContainer');
             const resultsSection = document.getElementById('resultsSection');
 
-            // Disable button and show loading
+            // Disable button and show steps
             btnSubmit.disabled = true;
             btnSubmit.innerHTML = '<span class="spinner"></span> Traitement...';
-            loadingContainer.classList.add('show');
+            resetSteps();
+            stepsContainer.classList.add('show');
             resultsSection.classList.remove('show');
 
+            const documentUuid = document.getElementById('documentUuid').value;
+            const fostKey = document.getElementById('fostKey').value;
+
+            let uploadResult, ocrResult, analysisResult, fostsResult, ocodeResult;
+            let debugOcr = null;
+            let debugBlocks = null;
+
             try {
-                // Upload file
+                // Step 1: Upload file
+                updateStep('upload', 'active');
                 const formData = new FormData();
                 formData.append('file', selectedFile);
 
@@ -1954,41 +2417,104 @@ export class TestService {
                 });
 
                 if (!uploadResponse.ok) throw new Error('Erreur upload');
-                const uploadResult = await uploadResponse.json();
+                uploadResult = await uploadResponse.json();
+                updateStep('upload', 'completed');
 
-                // Call Summarize API
-
-                const vaultUuid = document.getElementById('vaultUuid').value;
-                const documentUuid = document.getElementById('documentUuid').value;
-                const fostKey = document.getElementById('fostKey').value;
-
-                const requestBody = {
-                    vault_uuid: vaultUuid,
-                    document_uuid: documentUuid,
-                    document_url: uploadResult.document_url,
-                    s3_key: uploadResult.s3_key,
-                    async: false,
-                    debug: true
-                };
-
-                if (fostKey && fostKey.trim() !== '') {
-                    requestBody.fost_key = fostKey.trim();
-                }
-
-                const summarizeResponse = await fetch('/api/summarize', {
+                // Step 2: OCR with Textract
+                updateStep('ocr', 'active');
+                const ocrResponse = await fetch('/api/summarize/ocr', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': 'Basic ' + token
                     },
-                    body: JSON.stringify(requestBody)
+                    body: JSON.stringify({
+                        s3_key: uploadResult.s3_key,
+                        debug: true
+                    })
                 });
 
-                if (!summarizeResponse.ok) throw new Error('Erreur API Summarize');
-                const result = await summarizeResponse.json();
+                if (!ocrResponse.ok) throw new Error('Erreur OCR');
+                ocrResult = await ocrResponse.json();
+                debugOcr = ocrResult.extracted_text;
+                debugBlocks = ocrResult.blocks;
+                updateStep('ocr', 'completed');
 
-                // Hide loading and display results
-                loadingContainer.classList.remove('show');
+                // Step 3: Analyze text
+                updateStep('analyze', 'active');
+                const analyzeResponse = await fetch('/api/summarize/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Basic ' + token
+                    },
+                    body: JSON.stringify({
+                        extracted_text: ocrResult.extracted_text,
+                        document_uuid: documentUuid
+                    })
+                });
+
+                if (!analyzeResponse.ok) throw new Error('Erreur Analyse');
+                analysisResult = await analyzeResponse.json();
+                updateStep('analyze', 'completed');
+
+                // Step 4: FOST identification
+                updateStep('fost', 'active');
+
+                let fostsValue;
+                if (fostKey && fostKey.trim() !== '') {
+                    // Use provided fost_key directly
+                    fostsValue = [fostKey.trim()];
+                    updateStep('fost', 'completed');
+                } else {
+                    const fostResponse = await fetch('/api/summarize/fost', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Basic ' + token
+                        },
+                        body: JSON.stringify({
+                            analysis_result: analysisResult
+                        })
+                    });
+
+                    if (!fostResponse.ok) throw new Error('Erreur FOST');
+                    fostsResult = await fostResponse.json();
+                    fostsValue = fostsResult;
+                    updateStep('fost', 'completed');
+                }
+
+                // Step 5: Analyse de conformité
+                updateStep('ocode', 'active');
+                const ocodeResponse = await fetch('/api/summarize/ocode', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Basic ' + token
+                    },
+                    body: JSON.stringify({
+                        fosts: fostsValue,
+                        documents: [analysisResult]
+                    })
+                });
+
+                if (!ocodeResponse.ok) throw new Error('Erreur Analyse de conformité');
+                ocodeResult = await ocodeResponse.json();
+                updateStep('ocode', 'completed');
+
+                // Build final result
+                const result = {
+                    documents: [analysisResult],
+                    fosts: fostsValue,
+                    analyse: ocodeResult,
+                    debug_OCR: debugOcr,
+                    debug_OCR_JSON: debugBlocks
+                };
+
+                // Hide steps after small delay
+                setTimeout(() => {
+                    stepsContainer.classList.remove('show');
+                }, 500);
 
                 // Get document data from first document
                 const doc = result.documents && result.documents[0] ? result.documents[0] : {};
@@ -2000,19 +2526,24 @@ export class TestService {
                 document.getElementById('structuredResults').classList.add('show');
 
                 {
-                    // Header: title + type_doc tag + fost tags
-                    let headerHtml = '';
-                    if (doc.document_title) {
-                        headerHtml += '<h2 class="result-title">' + doc.document_title + '</h2>';
-                    }
+                    // Header: left (type_doc + title) | right (fost tags)
+                    let leftHtml = '';
                     if (doc.type_doc) {
-                        headerHtml += '<span class="tag tag-type">' + doc.type_doc + '</span>';
+                        leftHtml += '<span class="tag tag-type">' + doc.type_doc + '</span>';
                     }
+                    if (doc.document_title) {
+                        leftHtml += '<h2 class="result-title">' + doc.document_title + '</h2>';
+                    }
+
+                    let rightHtml = '';
                     if (fosts && fosts.length > 0) {
                         fosts.forEach(fost => {
-                            headerHtml += '<span class="tag tag-fost">' + fost + '</span>';
+                            rightHtml += '<span class="tag tag-fost">' + formatDate(fost) + '</span>';
                         });
                     }
+
+                    let headerHtml = '<div class="result-header-left">' + leftHtml + '</div>';
+                    headerHtml += '<div class="result-header-right">' + rightHtml + '</div>';
                     document.getElementById('resultHeader').innerHTML = headerHtml;
 
                     // Resume
@@ -2059,44 +2590,31 @@ export class TestService {
                     }
                 }
 
-                // Debug sections (shown at bottom if toggle is enabled)
-                // Full API response
-                document.getElementById('debugApiContent').textContent = JSON.stringify(result, null, 2);
-                document.getElementById('debugApiSection').dataset.hasContent = 'true';
+                // Debug sections - populate each step's result
+                document.getElementById('debugUploadContent').textContent = ocrResult.extracted_text || '';
+                document.getElementById('debugOcrContent').textContent = JSON.stringify(ocrResult, null, 2);
+                document.getElementById('debugExtractionContent').textContent = JSON.stringify(analysisResult, null, 2);
+                document.getElementById('debugFostContent').textContent = JSON.stringify(fostsValue, null, 2);
+                document.getElementById('debugAnalyseContent').textContent = JSON.stringify(ocodeResult, null, 2);
+
+                document.getElementById('debugSection').dataset.hasContent = 'true';
                 if (debugMode) {
-                    document.getElementById('debugApiSection').classList.add('show');
+                    document.getElementById('debugSection').classList.add('show');
                 } else {
-                    document.getElementById('debugApiSection').classList.remove('show');
-                }
-
-                // Debug OCR
-                if (result.debug_OCR) {
-                    document.getElementById('debugOcrContent').textContent = result.debug_OCR;
-                    document.getElementById('debugOcrSection').dataset.hasContent = 'true';
-                    if (debugMode) {
-                        document.getElementById('debugOcrSection').classList.add('show');
-                    }
-                } else {
-                    document.getElementById('debugOcrSection').dataset.hasContent = 'false';
-                    document.getElementById('debugOcrSection').classList.remove('show');
-                }
-
-                if (result.debug_OCR_JSON) {
-                    document.getElementById('debugJsonContent').textContent = JSON.stringify(result.debug_OCR_JSON, null, 2);
-                    document.getElementById('debugJsonSection').dataset.hasContent = 'true';
-                    if (debugMode) {
-                        document.getElementById('debugJsonSection').classList.add('show');
-                    }
-                } else {
-                    document.getElementById('debugJsonSection').dataset.hasContent = 'false';
-                    document.getElementById('debugJsonSection').classList.remove('show');
+                    document.getElementById('debugSection').classList.remove('show');
                 }
 
                 resultsSection.classList.add('show');
 
             } catch (error) {
                 console.error('Error:', error);
-                loadingContainer.classList.remove('show');
+                // Mark current active step as error
+                ['upload', 'ocr', 'analyze', 'fost', 'ocode'].forEach(step => {
+                    const el = document.getElementById('step-' + step);
+                    if (el.classList.contains('active')) {
+                        updateStep(step, 'error', error.message);
+                    }
+                });
                 alert('Erreur: ' + error.message);
             } finally {
                 btnSubmit.disabled = false;
@@ -2107,7 +2625,7 @@ export class TestService {
                         <line x1="16" y1="13" x2="8" y2="13"></line>
                         <line x1="16" y1="17" x2="8" y2="17"></line>
                     </svg>
-                    Lancer Summarize
+                    Lancer l'analyse
                 \`;
             }
         }
@@ -2129,7 +2647,25 @@ export class TestService {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <title>Energer - Test Analyse API</title>
-    <style>${this.getCommonStyles()}</style>
+    <style>${this.getCommonStyles()}
+        /* Analyse page color overrides */
+        .dropzone:hover { border-color: #007f72; }
+        .dropzone.drag-over { border-color: #007f72; }
+        .dropzone.file-selected { border-color: #007f72; }
+        .file-status.uploaded { background: #ccebe8; color: #007f72; }
+        .btn-submit { background: linear-gradient(135deg, #007f72 0%, #006660 100%); }
+        .btn-submit:hover:not(:disabled) { background: linear-gradient(135deg, #006660 0%, #005550 100%); }
+        .loading-spinner { border-top-color: #007f72; }
+        .file-success-icon { background: #ccebe8; color: #006660; }
+        .document-card { border: 2px solid #007f72; }
+        .document-card-header { background: linear-gradient(135deg, #ccebe8 0%, #b3e0db 100%); }
+        .document-card-header:hover { background: linear-gradient(135deg, #b3e0db 0%, #a0d4cf 100%); }
+        .document-card-content { background: white; }
+        .checklist-item.item-ok { border-left: 4px solid #007f72; }
+        .item-ok .check-icon { color: #007f72; background: #ccebe8; }
+        .badge-ok { background: #ccebe8; }
+        .toggle-switch input:checked + .toggle-slider { background-color: #007f72; }
+    </style>
 </head>
 <body>
     <header class="header">
@@ -2158,14 +2694,14 @@ export class TestService {
     </header>
 
     <main class="main">
-        <h1 class="page-title">Test API Analyse</h1>
+        <h1 class="page-title">Analyse dossier</h1>
         <p class="page-subtitle">Deposez plusieurs fichiers PDF pour tester l'analyse complete d'un dossier</p>
 
         <div class="dropzone-card">
             <div class="form-fields" style="grid-template-columns: 1fr;">
                 <div class="form-field">
-                    <label for="vaultUuid">Vault UUID</label>
-                    <input type="text" id="vaultUuid" placeholder="UUID du vault">
+                    <label for="vaultUuid">Opération UUID</label>
+                    <input type="text" id="vaultUuid" placeholder="UUID de l'opération">
                 </div>
             </div>
 
@@ -2185,16 +2721,62 @@ export class TestService {
                 <div id="fileItems"></div>
             </div>
 
-            <div class="progress-container" id="progressContainer">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
+            <div class="steps-container" id="stepsContainer">
+                <div class="steps-list">
+                    <div class="step-item" id="step-upload">
+                        <div class="step-header">
+                            <div class="step-icon">1</div>
+                            <div class="step-content">
+                                <div class="step-title">Upload des fichiers</div>
+                                <div class="step-description">Envoi des documents vers le serveur</div>
+                            </div>
+                            <div class="step-status" id="step-upload-status">En attente</div>
+                        </div>
+                        <div class="step-files" id="step-upload-files"></div>
+                    </div>
+                    <div class="step-item" id="step-ocr">
+                        <div class="step-header">
+                            <div class="step-icon">2</div>
+                            <div class="step-content">
+                                <div class="step-title">Extraction OCR</div>
+                                <div class="step-description">Extraction du texte brut</div>
+                            </div>
+                            <div class="step-status" id="step-ocr-status">En attente</div>
+                        </div>
+                        <div class="step-files" id="step-ocr-files"></div>
+                    </div>
+                    <div class="step-item" id="step-analyze">
+                        <div class="step-header">
+                            <div class="step-icon">3</div>
+                            <div class="step-content">
+                                <div class="step-title">Analyse des documents</div>
+                                <div class="step-description">Synthèse et extraction des informations</div>
+                            </div>
+                            <div class="step-status" id="step-analyze-status">En attente</div>
+                        </div>
+                        <div class="step-files" id="step-analyze-files"></div>
+                    </div>
+                    <div class="step-item" id="step-fost">
+                        <div class="step-header">
+                            <div class="step-icon">4</div>
+                            <div class="step-content">
+                                <div class="step-title">Identification FOST</div>
+                                <div class="step-description">Classification de la FOST et de sa version</div>
+                            </div>
+                            <div class="step-status" id="step-fost-status">En attente</div>
+                        </div>
+                    </div>
+                    <div class="step-item" id="step-ocode">
+                        <div class="step-header">
+                            <div class="step-icon">5</div>
+                            <div class="step-content">
+                                <div class="step-title">Analyse de conformité</div>
+                                <div class="step-description">Vérification des critères de conformité</div>
+                            </div>
+                            <div class="step-status" id="step-ocode-status">En attente</div>
+                        </div>
+                    </div>
                 </div>
-                <p class="progress-text" id="progressText">Traitement en cours...</p>
-            </div>
-
-            <div class="loading-container" id="loadingContainer">
-                <div class="loading-spinner"></div>
-                <p class="loading-text">Analyse en cours<span class="loading-dots"></span></p>
             </div>
 
             <div class="submit-container" id="submitContainer">
@@ -2228,16 +2810,40 @@ export class TestService {
             </div>
 
             <!-- Debug section -->
-            <div class="debug-section" id="debugApiSection" data-has-content="false">
-                <div class="debug-accordion" id="accordion-api">
-                    <div class="debug-accordion-header" onclick="toggleAccordion('api')">
-                        <span>Réponse API complète (JSON)</span>
+            <div class="debug-section" id="debugSection" data-has-content="false">
+                <!-- OCR text accordions (one per file) -->
+                <div class="debug-step-label">1. OCR texte brut</div>
+                <div id="debugOcrTextAccordions"></div>
+
+                <!-- OCR extraction accordions (one per file) -->
+                <div class="debug-step-label">2. Extraction OCR (blocs JSON)</div>
+                <div id="debugOcrBlocksAccordions"></div>
+
+                <!-- Analyse accordions (one per file) -->
+                <div class="debug-step-label">3. Analyse des documents</div>
+                <div id="debugAnalyseAccordions"></div>
+
+                <div class="debug-accordion" id="accordion-fost">
+                    <div class="debug-accordion-header" onclick="toggleAccordion('fost')">
+                        <span>4. Identification FOST</span>
                         <svg class="arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M6 9l6 6 6-6"/>
                         </svg>
                     </div>
-                    <div class="debug-accordion-content" id="accordion-content-api">
-                        <pre id="debugApiContent"></pre>
+                    <div class="debug-accordion-content" id="accordion-content-fost">
+                        <pre id="debugFostContent"></pre>
+                    </div>
+                </div>
+
+                <div class="debug-accordion" id="accordion-conformite">
+                    <div class="debug-accordion-header" onclick="toggleAccordion('conformite')">
+                        <span>5. Analyse de conformité</span>
+                        <svg class="arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                    </div>
+                    <div class="debug-accordion-content" id="accordion-content-conformite">
+                        <pre id="debugConformiteContent"></pre>
                     </div>
                 </div>
             </div>
@@ -2252,7 +2858,7 @@ export class TestService {
     <script>
         ${this.getCommonScripts()}
 
-        // Initialize vault UUID
+        // Initialize operation UUID
         document.getElementById('vaultUuid').value = generateShortUUID();
 
         let selectedFiles = [];
@@ -2363,101 +2969,351 @@ export class TestService {
             updateFileList();
         }
 
+        function updateStep(stepId, status, statusText) {
+            const stepElement = document.getElementById('step-' + stepId);
+            const statusElement = document.getElementById('step-' + stepId + '-status');
+
+            stepElement.classList.remove('active', 'completed', 'error');
+
+            if (status === 'active') {
+                stepElement.classList.add('active');
+                statusElement.innerHTML = '<div class="step-spinner"></div>';
+            } else if (status === 'completed') {
+                stepElement.classList.add('completed');
+                statusElement.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>';
+            } else if (status === 'error') {
+                stepElement.classList.add('error');
+                statusElement.textContent = statusText || 'Erreur';
+            } else {
+                statusElement.textContent = statusText || 'En attente';
+            }
+        }
+
+        function resetSteps() {
+            ['upload', 'ocr', 'analyze', 'fost', 'ocode'].forEach(step => {
+                updateStep(step, 'pending', 'En attente');
+            });
+            // Clear file lists
+            ['upload', 'ocr', 'analyze'].forEach(step => {
+                const filesEl = document.getElementById('step-' + step + '-files');
+                if (filesEl) filesEl.innerHTML = '';
+            });
+        }
+
+        function initFileList(stepId, files) {
+            const filesEl = document.getElementById('step-' + stepId + '-files');
+            if (!filesEl) return;
+            filesEl.innerHTML = files.map((file, index) =>
+                '<div class="step-file" id="step-' + stepId + '-file-' + index + '">' +
+                    '<span class="step-file-name">' + file.name + '</span>' +
+                    '<span class="step-file-status">En attente</span>' +
+                '</div>'
+            ).join('');
+        }
+
+        function updateFileStatus(stepId, index, status, progress) {
+            const fileEl = document.getElementById('step-' + stepId + '-file-' + index);
+            if (!fileEl) return;
+
+            fileEl.classList.remove('processing', 'completed', 'error', 'uploading');
+            const statusEl = fileEl.querySelector('.step-file-status');
+
+            if (status === 'uploading') {
+                fileEl.classList.add('uploading', 'processing');
+                const pct = progress || 0;
+                statusEl.innerHTML = '<div class="upload-progress"><div class="progress-bar"><div class="progress-bar-fill" style="width: ' + pct + '%"></div></div><span class="progress-text">' + pct + '%</span></div>';
+            } else if (status === 'processing') {
+                fileEl.classList.add('processing');
+                statusEl.innerHTML = '<div class="file-spinner"></div> En cours';
+            } else if (status === 'completed') {
+                fileEl.classList.add('completed');
+                statusEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Terminé';
+            } else if (status === 'error') {
+                fileEl.classList.add('error');
+                statusEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg> Erreur';
+            } else {
+                statusEl.textContent = 'En attente';
+            }
+        }
+
+        function updateUploadProgress(index, percent) {
+            const fileEl = document.getElementById('step-upload-file-' + index);
+            if (!fileEl) return;
+            const fillEl = fileEl.querySelector('.progress-bar-fill');
+            const textEl = fileEl.querySelector('.progress-text');
+            if (fillEl) fillEl.style.width = percent + '%';
+            if (textEl) textEl.textContent = percent + '%';
+        }
+
         async function submitAnalyse() {
             if (selectedFiles.length === 0) return;
 
             const btnSubmit = document.getElementById('btnSubmit');
-            const progressContainer = document.getElementById('progressContainer');
-            const progressFill = document.getElementById('progressFill');
-            const progressText = document.getElementById('progressText');
+            const stepsContainer = document.getElementById('stepsContainer');
             const resultsSection = document.getElementById('resultsSection');
 
-            // Disable button and show progress
+            // Disable button and show steps
             btnSubmit.disabled = true;
             btnSubmit.innerHTML = '<span class="spinner"></span> Traitement...';
-            progressContainer.classList.add('show');
+            resetSteps();
+            stepsContainer.classList.add('show');
             resultsSection.classList.remove('show');
 
+            const totalFiles = selectedFiles.length;
+            let uploadedFiles = new Array(totalFiles);
+            let ocrResults = new Array(totalFiles);
+            let analysisResults = [];
+            let fostsValue = [];
+            let ocodeResult = null;
+
             try {
-                // Get vault UUID
-                const vaultUuid = document.getElementById('vaultUuid').value;
+                // Initialize all file lists upfront
+                initFileList('upload', selectedFiles);
+                initFileList('ocr', selectedFiles);
+                initFileList('analyze', selectedFiles);
 
-                // Upload all files and get their info
-                const uploadedFiles = [];
-                const totalFiles = selectedFiles.length;
+                // Activate only upload step (OCR will activate when first upload completes, analyze when first OCR completes)
+                updateStep('upload', 'active');
 
-                for (let i = 0; i < selectedFiles.length; i++) {
-                    const file = selectedFiles[i];
-                    const progress = ((i + 1) / totalFiles) * 50;
-                    progressFill.style.width = progress + '%';
-                    progressText.textContent = 'Upload fichier ' + (i + 1) + '/' + totalFiles + '...';
+                // Track completion for each step
+                let uploadCompleted = 0;
+                let ocrCompleted = 0;
+                let analyzeCompleted = 0;
 
-                    const formData = new FormData();
-                    formData.append('file', file);
+                // Helper function for upload with progress
+                function uploadWithProgress(file, index) {
+                    return new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        const formData = new FormData();
+                        formData.append('file', file);
 
-                    const uploadResponse = await fetch('/api/upload', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': 'Basic ' + token
-                        },
-                        body: formData
-                    });
+                        xhr.upload.onprogress = (e) => {
+                            if (e.lengthComputable) {
+                                const percent = Math.round((e.loaded / e.total) * 100);
+                                updateUploadProgress(index, percent);
+                            }
+                        };
 
-                    if (!uploadResponse.ok) throw new Error('Erreur upload ' + file.name);
-                    const uploadResult = await uploadResponse.json();
-                    uploadedFiles.push({
-                        document_uuid: file.document_uuid,
-                        document_url: uploadResult.document_url,
-                        s3_key: uploadResult.s3_key
+                        xhr.onload = () => {
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                try {
+                                    resolve(JSON.parse(xhr.responseText));
+                                } catch (e) {
+                                    reject(new Error('Erreur parsing upload ' + file.name));
+                                }
+                            } else {
+                                reject(new Error('Erreur upload ' + file.name + ' (HTTP ' + xhr.status + ')'));
+                            }
+                        };
+
+                        xhr.onerror = () => reject(new Error('Erreur réseau upload ' + file.name));
+                        xhr.ontimeout = () => reject(new Error('Timeout upload ' + file.name));
+
+                        xhr.open('POST', '/api/upload');
+                        xhr.setRequestHeader('Authorization', 'Basic ' + token);
+                        xhr.timeout = 300000; // 5 minutes timeout
+                        xhr.send(formData);
                     });
                 }
 
-                // Hide progress bar after uploads complete, show loading spinner
-                progressContainer.classList.remove('show');
-                const loadingContainer = document.getElementById('loadingContainer');
-                loadingContainer.classList.add('show');
+                // Pipeline: each file goes through upload → ocr → analyze independently
+                const pipelinePromises = selectedFiles.map(async (file, index) => {
+                    // Step 1: Upload with progress
+                    updateFileStatus('upload', index, 'uploading', 0);
 
-                // Call Analyse API
+                    const uploadResult = await uploadWithProgress(file, index);
+                    updateFileStatus('upload', index, 'completed');
+                    uploadCompleted++;
+                    if (uploadCompleted === 1) updateStep('ocr', 'active'); // Activate OCR when first upload completes
+                    if (uploadCompleted === totalFiles) updateStep('upload', 'completed');
 
-                const analyseBody = {
-                    vault_uuid: vaultUuid,
-                    async: false,
-                    documents: uploadedFiles.map(f => ({
-                        document_uuid: f.document_uuid,
-                        document_url: f.document_url,
-                        s3_key: f.s3_key
-                    }))
-                };
+                    const uploadedFile = {
+                        document_uuid: file.document_uuid,
+                        document_url: uploadResult.document_url,
+                        s3_key: uploadResult.s3_key,
+                        name: file.name
+                    };
+                    uploadedFiles[index] = uploadedFile;
 
-                const analyseResponse = await fetch('/api/analyze', {
+                    // Step 2: OCR (starts immediately after upload)
+                    updateFileStatus('ocr', index, 'processing');
+                    const ocrResponse = await fetch('/api/summarize/ocr', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Basic ' + token
+                        },
+                        body: JSON.stringify({
+                            s3_key: uploadedFile.s3_key,
+                            debug: true
+                        })
+                    });
+
+                    if (!ocrResponse.ok) throw new Error('Erreur OCR ' + file.name);
+                    const ocrResult = await ocrResponse.json();
+                    updateFileStatus('ocr', index, 'completed');
+                    ocrCompleted++;
+                    if (ocrCompleted === 1) updateStep('analyze', 'active'); // Activate analyze when first OCR completes
+                    if (ocrCompleted === totalFiles) updateStep('ocr', 'completed');
+
+                    const ocrData = {
+                        document_uuid: uploadedFile.document_uuid,
+                        extracted_text: ocrResult.extracted_text,
+                        blocks: ocrResult.blocks,
+                        name: uploadedFile.name
+                    };
+                    ocrResults[index] = ocrData;
+
+                    // Step 3: Analyze (starts immediately after OCR)
+                    updateFileStatus('analyze', index, 'processing');
+                    const analyzeResponse = await fetch('/api/summarize/analyze', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Basic ' + token
+                        },
+                        body: JSON.stringify({
+                            extracted_text: ocrData.extracted_text,
+                            document_uuid: ocrData.document_uuid
+                        })
+                    });
+
+                    if (!analyzeResponse.ok) throw new Error('Erreur Analyse ' + file.name);
+                    const analyzeResult = await analyzeResponse.json();
+                    updateFileStatus('analyze', index, 'completed');
+                    analyzeCompleted++;
+                    if (analyzeCompleted === totalFiles) updateStep('analyze', 'completed');
+
+                    return {
+                        ...analyzeResult,
+                        _debug_file_name: ocrData.name
+                    };
+                });
+
+                // Wait for all files to complete their pipeline
+                analysisResults = await Promise.all(pipelinePromises);
+
+                // Step 4: FOST identification
+                updateStep('fost', 'active');
+                const fostResponse = await fetch('/api/summarize/fost', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': 'Basic ' + token
                     },
-                    body: JSON.stringify(analyseBody)
+                    body: JSON.stringify({
+                        analysis_result: { documents: analysisResults }
+                    })
                 });
 
-                if (!analyseResponse.ok) throw new Error('Erreur API Analyse');
-                const result = await analyseResponse.json();
+                if (!fostResponse.ok) throw new Error('Erreur FOST');
+                fostsValue = await fostResponse.json();
+                updateStep('fost', 'completed');
 
-                // Hide loading spinner
-                loadingContainer.classList.remove('show');
+                // Step 5: Analyse de conformité
+                updateStep('ocode', 'active');
+                const ocodeResponse = await fetch('/api/summarize/ocode', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Basic ' + token
+                    },
+                    body: JSON.stringify({
+                        fosts: fostsValue,
+                        documents: analysisResults
+                    })
+                });
+
+                if (!ocodeResponse.ok) throw new Error('Erreur Analyse de conformité');
+                ocodeResult = await ocodeResponse.json();
+                updateStep('ocode', 'completed');
+
+                // Build final result
+                const result = {
+                    documents: analysisResults,
+                    fosts: fostsValue,
+                    analyse: ocodeResult
+                };
+
+                // Hide steps after small delay
+                setTimeout(() => {
+                    stepsContainer.classList.remove('show');
+                }, 500);
 
                 displayAnalyseResults(result);
                 resultsSection.classList.add('show');
 
-                // Debug: store full API response
-                document.getElementById('debugApiContent').textContent = JSON.stringify(result, null, 2);
-                document.getElementById('debugApiSection').dataset.hasContent = 'true';
+                // Debug sections - generate accordions per file for OCR text, OCR blocks, and Analyse
+
+                // 1. OCR texte brut (per file)
+                const ocrTextAccordionsHtml = ocrResults.map((o, i) =>
+                    '<div class="debug-accordion debug-file-accordion" id="accordion-ocrtext-' + i + '">' +
+                        '<div class="debug-accordion-header" onclick="toggleAccordion(\\'ocrtext-' + i + '\\')">' +
+                            '<span>' + o.name + '</span>' +
+                            '<svg class="arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                                '<path d="M6 9l6 6 6-6"/>' +
+                            '</svg>' +
+                        '</div>' +
+                        '<div class="debug-accordion-content" id="accordion-content-ocrtext-' + i + '">' +
+                            '<pre>' + o.extracted_text + '</pre>' +
+                        '</div>' +
+                    '</div>'
+                ).join('');
+                document.getElementById('debugOcrTextAccordions').innerHTML = ocrTextAccordionsHtml;
+
+                // 2. Extraction OCR - blocs JSON (per file)
+                const ocrBlocksAccordionsHtml = ocrResults.map((o, i) =>
+                    '<div class="debug-accordion debug-file-accordion" id="accordion-ocrblocks-' + i + '">' +
+                        '<div class="debug-accordion-header" onclick="toggleAccordion(\\'ocrblocks-' + i + '\\')">' +
+                            '<span>' + o.name + '</span>' +
+                            '<svg class="arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                                '<path d="M6 9l6 6 6-6"/>' +
+                            '</svg>' +
+                        '</div>' +
+                        '<div class="debug-accordion-content" id="accordion-content-ocrblocks-' + i + '">' +
+                            '<pre>' + JSON.stringify(o.blocks || [], null, 2) + '</pre>' +
+                        '</div>' +
+                    '</div>'
+                ).join('');
+                document.getElementById('debugOcrBlocksAccordions').innerHTML = ocrBlocksAccordionsHtml;
+
+                // 3. Analyse des documents (per file)
+                const analyseAccordionsHtml = analysisResults.map((a, i) => {
+                    const fileName = a._debug_file_name || ('Document ' + (i + 1));
+                    const cleanResult = { ...a };
+                    delete cleanResult._debug_file_name;
+                    return '<div class="debug-accordion debug-file-accordion" id="accordion-analyse-' + i + '">' +
+                        '<div class="debug-accordion-header" onclick="toggleAccordion(\\'analyse-' + i + '\\')">' +
+                            '<span>' + fileName + '</span>' +
+                            '<svg class="arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                                '<path d="M6 9l6 6 6-6"/>' +
+                            '</svg>' +
+                        '</div>' +
+                        '<div class="debug-accordion-content" id="accordion-content-analyse-' + i + '">' +
+                            '<pre>' + JSON.stringify(cleanResult, null, 2) + '</pre>' +
+                        '</div>' +
+                    '</div>';
+                }).join('');
+                document.getElementById('debugAnalyseAccordions').innerHTML = analyseAccordionsHtml;
+
+                // 4 & 5. FOST and Conformité (global)
+                document.getElementById('debugFostContent').textContent = JSON.stringify(fostsValue, null, 2);
+                document.getElementById('debugConformiteContent').textContent = JSON.stringify(ocodeResult, null, 2);
+
+                document.getElementById('debugSection').dataset.hasContent = 'true';
                 if (debugMode) {
-                    document.getElementById('debugApiSection').classList.add('show');
+                    document.getElementById('debugSection').classList.add('show');
                 }
 
             } catch (error) {
                 console.error('Error:', error);
-                progressContainer.classList.remove('show');
-                document.getElementById('loadingContainer').classList.remove('show');
+                // Mark current active step as error
+                ['upload', 'ocr', 'analyze', 'fost', 'ocode'].forEach(step => {
+                    const el = document.getElementById('step-' + step);
+                    if (el.classList.contains('active')) {
+                        updateStep(step, 'error', error.message);
+                    }
+                });
                 alert('Erreur: ' + error.message);
             } finally {
                 btnSubmit.disabled = false;

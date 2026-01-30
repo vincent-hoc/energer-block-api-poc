@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SummarizeDto } from './summarize.dto';
+import { SummarizeDto, OcrDto, AnalyzeTextDto, FostDto, OcodeDto } from './summarize.dto';
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import {
   TextractClient,
@@ -66,14 +66,7 @@ export class SummarizeService {
       console.log('[Summarize] Starting Chatbase summarization...');
       const chatbaseResponse = await this.callChatbase(extractedText, 'Summarize', this.chatbaseSummarizeChatbotId);
 
-      let analysisResult = chatbaseResponse;
-      if (chatbaseResponse && chatbaseResponse.text) {
-        try {
-          analysisResult = JSON.parse(chatbaseResponse.text);
-        } catch {
-          analysisResult = chatbaseResponse;
-        }
-      }
+      let analysisResult = this.parseChatbaseResponse(chatbaseResponse);
 
       if (dto.document_uuid) {
         analysisResult.document_uuid = dto.document_uuid;
@@ -84,14 +77,7 @@ export class SummarizeService {
       console.log('[Summarize] Starting FOST identification...');
       const fostResponse = await this.callChatbase(JSON.stringify(analysisResult), 'FOST', this.chatbaseFostIdentificationId);
 
-      let finalResult = fostResponse;
-      if (fostResponse && fostResponse.text) {
-        try {
-          finalResult = JSON.parse(fostResponse.text);
-        } catch {
-          finalResult = fostResponse;
-        }
-      }
+      const finalResult = this.parseChatbaseResponse(fostResponse);
       console.log('[Summarize] FOST identification completed');
 
       const fostsValue = dto.fost_key ? [dto.fost_key] : finalResult;
@@ -107,15 +93,7 @@ export class SummarizeService {
         };
         const ocodeResponse = await this.callChatbase(JSON.stringify(ocodeInput), 'OCODE', this.chatbaseOcodeChatbotId);
 
-        if (ocodeResponse && ocodeResponse.text) {
-          try {
-            analyseResult = JSON.parse(ocodeResponse.text);
-          } catch {
-            analyseResult = ocodeResponse;
-          }
-        } else {
-          analyseResult = ocodeResponse;
-        }
+        analyseResult = this.parseChatbaseResponse(ocodeResponse);
         console.log('[Summarize] OCODE analysis completed');
       }
 
@@ -135,6 +113,65 @@ export class SummarizeService {
       console.error('[Summarize] Error:', error.message);
       throw error;
     }
+  }
+
+  // Step 1: OCR with Textract
+  async processOcr(dto: OcrDto): Promise<{ extracted_text: string; blocks?: any[] }> {
+    console.log('[Summarize] Step 1: Starting OCR...');
+    const result = await this.extractTextWithTextract('', dto.s3_key, dto.debug ?? false);
+    console.log('[Summarize] Step 1: OCR completed');
+
+    const response: { extracted_text: string; blocks?: any[] } = {
+      extracted_text: result.text
+    };
+
+    if (dto.debug) {
+      response.blocks = result.blocks;
+    }
+
+    return response;
+  }
+
+  // Step 2: Analyze text with Chatbase
+  async processAnalyzeText(dto: AnalyzeTextDto): Promise<any> {
+    console.log('[Summarize] Step 2: Starting text analysis...');
+    const chatbaseResponse = await this.callChatbase(dto.extracted_text, 'Summarize', this.chatbaseSummarizeChatbotId);
+
+    let analysisResult = this.parseChatbaseResponse(chatbaseResponse);
+
+    if (dto.document_uuid) {
+      analysisResult.document_uuid = dto.document_uuid;
+    }
+
+    console.log('[Summarize] Step 2: Text analysis completed');
+    return analysisResult;
+  }
+
+  // Step 3: FOST identification
+  async processFost(dto: FostDto): Promise<any> {
+    console.log('[Summarize] Step 3: Starting FOST identification...');
+    const fostResponse = await this.callChatbase(JSON.stringify(dto.analysis_result), 'FOST', this.chatbaseFostIdentificationId);
+
+    const result = this.parseChatbaseResponse(fostResponse);
+
+    console.log('[Summarize] Step 3: FOST identification completed');
+    return result;
+  }
+
+  // Step 4: OCODE analysis
+  async processOcode(dto: OcodeDto): Promise<any> {
+    console.log('[Summarize] Step 4: Starting OCODE analysis...');
+    const ocodeInput = {
+      fosts: dto.fosts,
+      documents: dto.documents
+    };
+
+    const ocodeResponse = await this.callChatbase(JSON.stringify(ocodeInput), 'OCODE', this.chatbaseOcodeChatbotId);
+
+    const result = this.parseChatbaseResponse(ocodeResponse);
+
+    console.log('[Summarize] Step 4: OCODE analysis completed');
+    return result;
   }
 
   private async extractTextWithTextract(documentUrl: string, existingS3Key: string | undefined, debug: boolean): Promise<{ text: string; blocks: any[] }> {
@@ -297,5 +334,41 @@ export class SummarizeService {
     }
 
     return response.json();
+  }
+
+  /**
+   * Parse Chatbase response, handling various formats:
+   * - Direct JSON object
+   * - Object with 'text' field containing JSON string
+   * - Object with 'text' field containing JSON wrapped in markdown code blocks
+   */
+  private parseChatbaseResponse(chatbaseResponse: any): any {
+    if (!chatbaseResponse) {
+      return chatbaseResponse;
+    }
+
+    // If response has a 'text' field, try to parse it
+    if (chatbaseResponse.text) {
+      let textContent = chatbaseResponse.text;
+
+      // Remove markdown code block delimiters if present
+      // Handles: ```json\n{...}\n``` or ```\n{...}\n```
+      const codeBlockRegex = /^```(?:json)?\s*\n?([\s\S]*?)\n?```$/;
+      const match = textContent.match(codeBlockRegex);
+      if (match) {
+        textContent = match[1].trim();
+      }
+
+      // Try to parse as JSON
+      try {
+        return JSON.parse(textContent);
+      } catch {
+        // If parsing fails, return the original response
+        console.warn('[Chatbase] Could not parse response text as JSON');
+        return chatbaseResponse;
+      }
+    }
+
+    return chatbaseResponse;
   }
 }
