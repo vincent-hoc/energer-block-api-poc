@@ -139,6 +139,12 @@ export class SummarizeService {
 
     let analysisResult = this.parseChatbaseResponse(chatbaseResponse);
 
+    // Ensure analysisResult is an object before adding document_uuid
+    if (!analysisResult || typeof analysisResult !== 'object' || Array.isArray(analysisResult)) {
+      console.warn('[Summarize] Unexpected analysis result format:', typeof analysisResult);
+      analysisResult = { raw_response: analysisResult };
+    }
+
     if (dto.document_uuid) {
       analysisResult.document_uuid = dto.document_uuid;
     }
@@ -320,20 +326,31 @@ export class SummarizeService {
   private async callChatbase(textData: string, chatbotName: string, chatbotId: string): Promise<any> {
     const requestBody = this.generateChatbaseMessage(textData, chatbotId);
 
-    const response = await fetch(this.chatbaseApiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.chatbaseBearerToken}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
+    console.log(`[Chatbase ${chatbotName}] Sending request (${textData.length} chars)...`);
 
-    if (!response.ok) {
-      throw new Error(`Chatbase ${chatbotName} error: ${response.status} ${response.statusText}`);
+    try {
+      const response = await fetch(this.chatbaseApiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.chatbaseBearerToken}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error(`[Chatbase ${chatbotName}] Error response:`, errorBody);
+        throw new Error(`Chatbase ${chatbotName} error: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log(`[Chatbase ${chatbotName}] Response received`);
+      return result;
+    } catch (error) {
+      console.error(`[Chatbase ${chatbotName}] Request failed:`, error.message);
+      throw error;
     }
-
-    return response.json();
   }
 
   /**
